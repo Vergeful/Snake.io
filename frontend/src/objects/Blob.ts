@@ -2,50 +2,40 @@ import Phaser from "phaser";
 
 export class Blob {
     scene: Phaser.Scene;
-    container: Phaser.GameObjects.Container;
     graphics: Phaser.GameObjects.Graphics;
-    body: Phaser.Physics.Arcade.Body;
     baseSpeed: number;
     radius: number;
+    x: number;
+    y: number;
 
     constructor(scene: Phaser.Scene, x: number, y: number, color: number = 0x00ff00) {
         this.scene = scene;
-        this.baseSpeed = 150; // Movement speed
+        this.baseSpeed = 150;
         this.radius = 20;
+        this.x = x;
+        this.y = y;
 
-        // Create a graphics object for the blob
+
         this.graphics = this.scene.add.graphics();
-        this.drawBlob(0, 0, color);
-
-        const physicsBody = this.scene.physics.add.image(x, y, "");
-        physicsBody.setVisible(false);
-        physicsBody.setCircle(20);
-        physicsBody.setCollideWorldBounds(true); 
-
-        this.body = physicsBody.body as Phaser.Physics.Arcade.Body;
-
-        this.graphics.setPosition(this.radius, this.radius);
-
-        this.container = this.scene.add.container(x, y, [this.graphics]);
-        this.scene.physics.world.enable(this.container);
+        this.drawBlob(color);
+        this.graphics.setPosition(this.x, this.y);
     }
 
-    
-    private drawBlob(x: number, y: number, color: number) {
+    private drawBlob(color: number) {
         this.graphics.clear();
         this.graphics.fillStyle(color, 1);
-        this.graphics.fillCircle(x, y, 20);
+        this.graphics.fillCircle(0, 0, this.radius);
     }
 
-    move(dx: number, dy: number) {
-        this.body.setVelocity(dx * this.baseSpeed, dy * this.baseSpeed);
+    move(dx: number, dy: number, delta: number) {
+        const speedFactor = delta / 1000; 
+        this.x += dx * this.baseSpeed * speedFactor;
+        this.y += dy * this.baseSpeed * speedFactor;
 
-        // Sync the graphics position with the physics body
-        this.container.x = this.body.position.x;
-        this.container.y = this.body.position.y;
+        this.graphics.setPosition(this.x, this.y);
     }
 
     getPosition() {
-        return { x: this.container.x, y: this.container.y };
+        return { x: this.x, y: this.y };
     }
 }

@@ -30,10 +30,10 @@ export class Game extends Scene {
     this.cursors = this.input.keyboard!.createCursorKeys();
 
     // Create player
-    this.player = new Blob(this, 400, 300);
+    this.player = new Blob(this, 0, 0);
 
     // Make camera follow the container (not just the graphics)
-    this.cameras.main.startFollow(this.player.container, true, 0.05, 0.05);
+    this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
     this.cameras.main.setZoom(1);
   }
 
@@ -49,7 +49,7 @@ export class Game extends Scene {
     if (this.cursors.up?.isDown) dy = -1;
     if (this.cursors.down?.isDown) dy = 1;
 
-    this.player.move(dx, dy);
+    this.player.move(dx, dy, delta);
   }
 
   private drawGrid(gridSize: number, worldWidth: number, worldHeight: number) {

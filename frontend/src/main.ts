@@ -1,4 +1,5 @@
-import { Game as MainGame } from './scenes/Game';
+import { Game as MainGame } from './scenes/Game.ts';
+import { Home} from './scenes/Home.ts'
 
 import { Game, Types } from "phaser";
 
@@ -14,7 +15,7 @@ const config: Types.Core.GameConfig = {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
-    scene: [MainGame],
+    scene: [Home, MainGame],
     physics:{
         default: "arcade",
     }
