@@ -9,12 +9,15 @@ const config: Types.Core.GameConfig = {
     width: window.innerWidth,
     height: window.innerHeight,
     parent: 'game-container',
-    backgroundColor: '#028af8',
+    backgroundColor: '#ffffff',
     scale: {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
-    scene: [MainGame]
+    scene: [MainGame],
+    physics:{
+        default: "arcade",
+    }
 };
 
 export default new Game(config);
