@@ -7,5 +7,5 @@ class Player(models.Model):
     speed = models.IntegerField(default=200) 
     score = models.IntegerField(default=0) 
 
-def __str__(self): 
-    return self.name
+    def __str__(self): 
+        return self.name
