@@ -10,7 +10,7 @@ export class Blob {
 
     constructor(scene: Phaser.Scene, x: number, y: number, color: number = 0x00ff00) {
         this.scene = scene;
-        this.baseSpeed = 200; // Movement speed
+        this.baseSpeed = 150; // Movement speed
         this.radius = 20;
 
         // Create a graphics object for the blob
@@ -37,8 +37,7 @@ export class Blob {
         this.graphics.fillCircle(x, y, 20);
     }
 
-    move(dx: number, dy: number, delta: number) {
-        const speedFactor = delta / 1000; // Convert delta time to seconds
+    move(dx: number, dy: number) {
         this.body.setVelocity(dx * this.baseSpeed, dy * this.baseSpeed);
 
         // Sync the graphics position with the physics body

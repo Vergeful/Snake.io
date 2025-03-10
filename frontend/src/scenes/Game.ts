@@ -49,7 +49,7 @@ export class Game extends Scene {
     if (this.cursors.up?.isDown) dy = -1;
     if (this.cursors.down?.isDown) dy = 1;
 
-    this.player.move(dx, dy, delta);
+    this.player.move(dx, dy);
   }
 
   private drawGrid(gridSize: number, worldWidth: number, worldHeight: number) {
