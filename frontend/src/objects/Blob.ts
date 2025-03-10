@@ -17,11 +17,14 @@ export class Blob {
         this.graphics = this.scene.add.graphics();
         this.drawBlob(0, 0, color);
 
-        const physicsBody = this.scene.physics.add.sprite(x, y, "");
+        const physicsBody = this.scene.physics.add.image(x, y, "");
+        physicsBody.setVisible(false);
         physicsBody.setCircle(20);
         physicsBody.setCollideWorldBounds(true); 
 
         this.body = physicsBody.body as Phaser.Physics.Arcade.Body;
+
+        this.graphics.setPosition(this.radius, this.radius);
 
         this.container = this.scene.add.container(x, y, [this.graphics]);
         this.scene.physics.world.enable(this.container);
