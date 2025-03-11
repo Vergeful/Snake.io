@@ -8,10 +8,10 @@ export class Blob {
     x: number;
     y: number;
 
-    constructor(scene: Phaser.Scene, x: number, y: number, color: number = 0x00ff00) {
+    constructor(scene: Phaser.Scene, x: number, y: number, radius:number = 20,color: number = 0x00ff00) {
         this.scene = scene;
         this.baseSpeed = 150;
-        this.radius = 20;
+        this.radius = radius;
         this.x = x;
         this.y = y;
 

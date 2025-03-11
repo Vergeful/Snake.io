@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import axios from "axios";
 
 export class Home extends Phaser.Scene {
   private nameInput!: HTMLInputElement;
@@ -59,19 +60,33 @@ export class Home extends Phaser.Scene {
     this.styleHTMLElement(this.playButton, width / 2, height * 0.6);
     document.body.appendChild(this.playButton);
 
-    // Play Button Click Event
-    this.playButton.addEventListener("click", () => {
+    this.playButton.addEventListener("click", async () => {
       const playerName = this.nameInput.value || "Player";
-      const playerColor = parseInt(this.colorSelect.value);
+      const playerColor = this.colorSelect.value;
+  
+      try {
+          const response = await axios.post("http://127.0.0.1:8000/game/create_player/", {
+              name: playerName,
+              color: playerColor,
+          });
+  
+          console.log("Player Created:", response.data);
+  
+          // Cleanup UI elements
+          document.body.removeChild(this.nameInput);
+          document.body.removeChild(this.colorSelect);
+          document.body.removeChild(this.playButton);
 
-      // Cleanup UI elements
-      document.body.removeChild(this.nameInput);
-      document.body.removeChild(this.colorSelect);
-      document.body.removeChild(this.playButton);
-
-      // Start game with player settings
-      this.scene.start("Game", { playerName, playerColor });
-    });
+          const playerID = response.data.player_id;
+  
+          // Start game
+          this.scene.start("Game", { playerName, playerColor, playerID });
+  
+      } catch (error) {
+          console.error("Error sending player data:", error);
+          alert("Failed to start the game.");
+      }
+  });
   }
 
   // Function to style HTML elements and position them
