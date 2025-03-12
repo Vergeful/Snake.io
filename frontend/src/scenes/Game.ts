@@ -46,8 +46,8 @@ export class Game extends Scene {
 
         for (const id in data.players) {
           if (String(id) !== String(this.playerID)) {
-              const { x, y } = data.players[id];
-              this.otherPlayers[id] = new Blob(this, x, y);
+              const { x, y, size, color } = data.players[id];
+              this.otherPlayers[id] = new Blob(this, x, y, size, color);
           }
         }
 
@@ -60,13 +60,25 @@ export class Game extends Scene {
         }
       }
 
+      if (data.type === "player_joined"){
+        if (String(data.id) !== String(this.playerID)) {
+          this.otherPlayers[data.id] = new Blob(this, data.x, data.y, data.size, data.color);
+        }
+      }
+
 
       if (data.type === "update") {
-        if (data.id === this.playerID) {
+        if (String(data.id) === String(this.playerID)) {
           //Server updates local player position
           this.player.x = data.x;
           this.player.y = data.y;
           this.player.graphics.setPosition(data.x, data.y);
+        }
+        else {
+          this.otherPlayers[data.id]
+          this.otherPlayers[data.id].x = data.x;
+          this.otherPlayers[data.id].y = data.y;
+          this.otherPlayers[data.id].graphics.setPosition(data.x, data.y);
         }
       }
 
