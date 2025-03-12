@@ -32,7 +32,11 @@ export class Game extends Scene {
 
     this.socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("Received Data:", data);
+      if(data.type !== "update")
+      {
+        console.log("Received Data:", data);
+      }
+      
       if (data.type === "all_players"){
         this.player = new Blob(this, data.players[this.playerID].x,data.players[this.playerID].y, data.players[this.playerID].size, parseInt(data.players[this.playerID].color))
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);

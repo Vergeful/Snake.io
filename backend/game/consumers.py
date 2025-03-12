@@ -38,7 +38,9 @@ def save_player(player):
 class PlayerConsumer(AsyncWebsocketConsumer):
     players = {} 
 
-    async def connect(self): 
+    async def connect(self):
+        self.room_name= "game_room"
+        await self.channel_layer.group_add(self.room_name, self.channel_name)
         await self.accept()
 
         if not FOOD_LIST:
@@ -69,6 +71,11 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             "y": self.players[self.player_id]["y"],
             "color": self.players[self.player_id]["color"],
         }))
+
+        await self.broadcast({
+            "type": "info",
+            "message": "Testing"
+        })
 
     async def disconnect(self, close_code):
         # Leave websocket group
@@ -145,6 +152,20 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                     "x": new_x,
                     "y": new_y
                 }))
+    
+    async def broadcast(self, message):
+        """Send message to all connected players in the group"""
+        await self.channel_layer.group_send(
+            "game_room",
+            {
+                "type": "send_message",
+                "message": json.dumps(message),
+            }
+        )
+    
+    async def send_message(self, event):
+        """Send the broadcast message to each connected WebSocket"""
+        await self.send(text_data=event["message"])
 
 
 
