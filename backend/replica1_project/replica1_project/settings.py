@@ -83,7 +83,7 @@ ASGI_APPLICATION = 'replica1_project.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': 'db_replica1.sqlite3',
     }
 }
 
