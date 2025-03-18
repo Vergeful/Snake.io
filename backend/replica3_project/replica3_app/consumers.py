@@ -42,7 +42,6 @@ def generate_food():
     ]
 
 
-
 class PlayerConsumer(AsyncWebsocketConsumer):
     
     # Keeps track of all the player data in the server
@@ -206,3 +205,4 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     async def send_message(self, event):
         """Send the broadcast message to each connected WebSocket"""
         await self.send(text_data=event["message"])
+
