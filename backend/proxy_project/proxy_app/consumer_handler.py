@@ -35,7 +35,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 if server != PRIMARY_SERVER:
                     try:
                         async with aiohttp.ClientSession() as session:
-                            async with session.ws_connect(f'{server}/ws/game/') as ws:
+                            async with session.ws_connect(f'{server}/game/') as ws:
                                 await ws.send_json(text_data_json)
                                 response = await ws.receive()
                                 PRIMARY_SERVER = server  # Update the primary server
