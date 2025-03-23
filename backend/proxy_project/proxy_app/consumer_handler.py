@@ -3,6 +3,7 @@ import asyncio
 import websockets
 import aiohttp
 from channels.generic.websocket import AsyncWebsocketConsumer
+from autobahn.exception import Disconnected
 
 SERVERS = ['ws://localhost:8001', 'http://localhost:8002', 'http://localhost:8003']
 PRIMARY_SERVER = SERVERS[0]
@@ -25,19 +26,24 @@ class GameConsumer(AsyncWebsocketConsumer):
         pass
 
     async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
+        #text_data_json = json.loads(text_data)
 
         # Forward the WebSocket message to the primary replica
         #response = await self.send_to_primary(text_data_json)
         #await self.send(text_data=json.dumps(response))
 
-        await self.replica_socket.send(text_data_json)
+        print("The server's telling us something")
+        await self.replica_socket.send(text_data)
 
     async def listen_to_server(self):
         try:
             async for message in self.replica_socket:
                 # Forward message to frontend
-                await self.send(message)
+                try:
+                    await self.send(message)
+                except Disconnected:
+                    print("Frontend WebSocket disconnected while sending.")
+                    break
         except websockets.exceptions.ConnectionClosed:
             print("The Server's Dead")
         pass

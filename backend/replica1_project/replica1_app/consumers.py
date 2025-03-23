@@ -136,6 +136,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         Receive a message from the WebSocket
         """
         data = json.loads(text_data)
+        print("I'm getting a call")
         
         try:
             player = await get_player(self.player_id)
