@@ -21,6 +21,7 @@ def send_to_primary(data):
         print(json_data)
         response = requests.post(f'{PRIMARY_SERVER}/replica/create_player/', data=json_data, timeout=2)
         print(f'Successfully sent to the primary server: {PRIMARY_SERVER}')
+        print(response.json)
         return response.json()
     except requests.exceptions.RequestException:
         # If primary server is not working, we need to designate a backup server as the primary:

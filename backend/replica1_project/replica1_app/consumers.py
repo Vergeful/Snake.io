@@ -67,6 +67,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         Handles connection of websocket from frontend
         """
 
+        print("And we're in")
+
         # Adding players to group
         self.room_name= "game_room"
         await self.channel_layer.group_add(self.room_name, self.channel_name)

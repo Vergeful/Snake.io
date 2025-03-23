@@ -14,26 +14,22 @@ THIS_SERVER = SERVERS[0]
 @api_view(["POST"])
 def create_player(request):
     data = request.POST.dict()
-    print('Received form data:', data)
+    print('What we get: ', data)
 
     serializer = PlayerSerializer(data=data)
-    print("let's go")
     if serializer.is_valid():
-        print("we're in baby")
         player = serializer.save()   # Save to database
+
+        print(player.id)
 
         # If this server is the primary replica, propagate the request to other replicas:
         #if is_primary():
          #   propagate_to_replicas(request)
-        
-        print("we propagated baby")
 
         return Response(
             {"message": "Player created!", "player_id": player.id},
             status = status.HTTP_201_CREATED
         )
-    else:
-        print("serializer errors:", serializer.errors)
      
     # Error encountered
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
