@@ -48,6 +48,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             print("The Server's Dead")
         pass
 
+    # I'm leaving this here for posterity, but I don't actually use the send to primary function
     async def send_to_primary(self, text_data_json):
         global PRIMARY_SERVER
         try:
