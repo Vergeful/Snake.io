@@ -23,8 +23,8 @@ def create_player(request):
         print(player.id)
 
         # If this server is the primary replica, propagate the request to other replicas:
-        #if is_primary():
-         #   propagate_to_replicas(request)
+        if is_primary():
+           propagate_to_replicas(data)
 
         return Response(
             {"message": "Player created!", "player_id": player.id},

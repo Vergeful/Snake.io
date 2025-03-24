@@ -26,7 +26,6 @@ def send_to_primary(data):
         # If primary server is not working, we need to trigger a leader election to designate a backup server as the primary:
 
 
-
     return {'error': 'All servers could not be reached.'}
 
 
