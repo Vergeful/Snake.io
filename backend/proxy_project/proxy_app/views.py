@@ -20,14 +20,13 @@ def send_to_primary(data):
         print(f'Successfully sent to the primary server: {PRIMARY_SERVER}')
         return response.json()
     except requests.exceptions.RequestException:
-        # If primary server is not working, we need to designate a backup server as the primary:
-        for server in SERVERS:
-            if server != PRIMARY_SERVER:
-                try:
-                    response = requests.post(f'{server}/replica/create_player/', data=data, timeout=2)
-                    PRIMARY_SERVER = server  # Set new primary server
-                    print(f'Successfully sent to new primary server: {PRIMARY_SERVER}')
-                    return response.json()
-                except requests.exceptions.RequestException:
-                    print(f'Backup server {server} could not be reached.')
+         print(f"Primary replica could not be reached: {PRIMARY_SERVER}")
+        # If primary server is not working, we need to trigger a leader election to designate a backup server as the primary:
+
+
+
     return {'error': 'All servers could not be reached.'}
+
+
+async def trigger_leader_election(self):
+    pass

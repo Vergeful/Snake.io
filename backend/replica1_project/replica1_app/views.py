@@ -44,4 +44,4 @@ def propagate_to_replicas(data):
             try:
                 requests.post(f'{server}/replica/create_player/', data=data, timeout=2)
             except requests.exceptions.RequestException:
-                print(f"Failed to propagate to server: {server}")
+                print(f"Server did not respond: {server}")
