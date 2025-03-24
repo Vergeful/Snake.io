@@ -3,8 +3,7 @@ import websockets
 import aiohttp
 import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
-
-SERVERS = ['ws://localhost:8001/ws/game/', 'ws://localhost:8002/ws/game/', 'ws://localhost:8003/ws/game/']
+from .shared_state import SERVERS, PRIORITY, get_primary, update_primary
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -19,18 +18,17 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     # When the client establishes a websocket connection with the proxy, try to establish connection with primary:
     async def connect_to_primary(self):
-        for server in SERVERS:
-            try:
-                self.primary_connection = await websockets.connect(f'{server}{self.player_id}')
-                self.primary_server = server
-                print(f'Primary server: {server}')
-                asyncio.create_task(self.listen_to_server())
-                return
-            except Exception as e:
-                print(f'Server could not be reached: {server}')
-            
-        print("All servers are down.")
-        await self.close()
+        # Check if primary server is up:
+        primary_shared = get_primary()
+        try:
+            self.primary_connection = await websockets.connect(f'ws://{primary_shared}/ws/game/{self.player_id}')
+            self.primary_server = 'ws://{primary_shared}/ws/game/{self.player_id}'
+            print(f'Primary server: {primary_shared}')
+            asyncio.create_task(self.listen_to_server())
+            return
+        except Exception as e:
+            print(f'Primary replica could not be reached.')
+            await self.trigger_leader_election() 
 
     async def disconnect(self, close_code):
         pass

@@ -4,7 +4,9 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import Player
 import random
 import asyncio
+from .shared_state import SERVERS, THIS_SERVER, get_primary, update_primary, PRIORITY
 
+# SERVERS = ['ws://localhost:8001/ws/game/', 'ws://localhost:8002/ws/game/', 'ws://localhost:8003/ws/game/']
 
 """Functions for accesssing backend database through websockets"""
 @database_sync_to_async

@@ -2,9 +2,7 @@ import requests
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-
-SERVERS = ['http://localhost:8001', 'http://localhost:8002', 'http://localhost:8003']
-PRIMARY_SERVER = SERVERS[0] 
+from .shared_state import SERVERS, PRIORITY, get_primary, update_primary
 
 @csrf_exempt
 def create_player(request):
@@ -14,15 +12,15 @@ def create_player(request):
         return JsonResponse(response)
 
 def send_to_primary(data):
-    global PRIMARY_SERVER
+    primary_server = get_primary()
     try:
         json_data = json.loads(data.decode('utf-8'))
         # If primary server is working:
-        response = requests.post(f'{PRIMARY_SERVER}/replica/create_player/', data=json_data, timeout=2)
-        print(f'Successfully sent to the primary server: {PRIMARY_SERVER}')
+        response = requests.post(f'http://{primary_server}/replica/create_player/', data=json_data, timeout=2)
+        print(f'Successfully sent to the primary server: {primary_server}')
         return response.json()
     except requests.exceptions.RequestException:
-         print(f"Primary replica could not be reached: {PRIMARY_SERVER}")
+         print(f"Primary replica could not be reached: {primary_server}")
         # If primary server is not working, we need to trigger a leader election to designate a backup server as the primary:
 
 

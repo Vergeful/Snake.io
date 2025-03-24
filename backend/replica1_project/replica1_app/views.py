@@ -5,12 +5,9 @@ from rest_framework import status
 from .models import Player
 from .serializers import PlayerSerializer
 import requests
+from .shared_state import SERVERS, THIS_SERVER, get_primary, update_primary, PRIORITY
  
-SERVERS = ['http://localhost:8001', 'http://localhost:8002', 'http://localhost:8003']
-PRIMARY_SERVER = SERVERS[0]
-THIS_SERVER = SERVERS[0]
-
- 
+  
 @api_view(["POST"])
 def create_player(request):
     data = request.POST.dict()
@@ -36,17 +33,18 @@ def create_player(request):
  
 # Check if this server is the primary replica
 def is_primary():
-    global PRIMARY_SERVER
     global THIS_SERVER
-    return THIS_SERVER == PRIMARY_SERVER
+    current_primary_server = get_primary()
+    return THIS_SERVER == current_primary_server
  
  
 # Send the POST request to the other replicas if you are the primary
 def propagate_to_replicas(data):
+    global SERVERS
     global THIS_SERVER
     for server in SERVERS:
         if server != THIS_SERVER:
             try:
-                requests.post(f'{server}/replica/create_player/', data=data, timeout=2)
+                requests.post(f'http://{server}/replica/create_player/', data=data, timeout=2)
             except requests.exceptions.RequestException:
                 print(f"Server did not respond: {server}")
