@@ -24,6 +24,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 self.primary_connection = await websockets.connect(f'{server}{self.player_id}')
                 self.primary_server = server
                 print(f'Primary server: {server}')
+                asyncio.create_task(self.listen_to_server())
                 return
             except Exception as e:
                 print(f'Server could not be reached: {server}')
@@ -36,24 +37,12 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         # Try to send data from client to primary replica:
-        try:
-            if not self.primary_connection:
-                self.trigger_leader_election()
-            
+        try:            
             # Set a timeout for the primary server response:
-            response = await asyncio.wait_for(self.send_to_primary(text_data), timeout=1)
+            await self.primary_connection.send(text_data)
 
             # Send the response back to the client:
-            await self.send(response) 
-
-        except asyncio.TimeoutError:
-             print("Primary server timeout of 1 second. Triggering leader election...")
-             await self.trigger_leader_election()
-
-            # Send intial data from client to newly elected leader:
-             response = await self.send_to_primary(text_data)
-             await self.send(response) 
-             
+            # await self.send(response)            
         
         except Exception as e:
             print(f"Primary server error: {e}")
@@ -61,13 +50,27 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.trigger_leader_election()
 
             # Send intial data from client to newly elected leader:
-            response = await self.send_to_primary(text_data)
+            response = await self.primary_connection.send(text_data)
             await self.send(response) 
+    
+    async def listen_to_server(self):
+        try:
+            async for message in self.primary_connection:
+                # Forward message to frontend
+                try:
+                    await self.send(message)
+                except Exception:
+                    print("Something Went Wrong")
+                    self.trigger_leader_election()
+                    break
+        except websockets.exceptions.ConnectionClosed:
+            # now we have to trigger leader election
+            self.trigger_leader_election()
+            pass
 
     # Send data from client to primary replica over websocket connection
     async def send_to_primary(self, text_data):
         await self.primary_connection.send(text_data)
-        return await self.primary_connection.recv()
     
     async def trigger_leader_election(self):
         print(f"Leader election begins ...")
