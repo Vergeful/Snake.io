@@ -48,3 +48,24 @@ def propagate_to_replicas(data):
                 requests.post(f'http://{server}/replica/create_player/', data=data, timeout=2)
             except requests.exceptions.RequestException:
                 print(f"Server did not respond: {server}")
+
+@api_view(["GET"])
+def health_check(request):
+     return Response(
+            {"status": "OK"},
+            status = status.HTTP_200_OK
+        )
+
+@api_view(["POST"])
+def update_primary(request):
+    global THIS_SERVER
+    global SERVERS
+
+    data = request.json()
+    new_primary_server_index = data.get("new_index")
+    update_primary(SERVERS[new_primary_server_index])
+    return Response(
+            {"message": f'Primary was updated to {SERVERS[new_primary_server_index]}'},
+            status = status.HTTP_200_OK
+        )
+
