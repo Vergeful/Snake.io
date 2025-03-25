@@ -19,7 +19,7 @@ def send_to_primary(data):
     try:
         json_data = json.loads(data.decode('utf-8'))
         # If primary server is working:
-        response = requests.post(f'http://{primary_server}/replica/create_player/', data=json_data, timeout=2)
+        response = requests.post(f'http://{primary_server}/replica/create_player/', data=json_data, timeout=60)
         print(f'Successfully sent to the primary server: {primary_server}')
         return response.json()
     except requests.exceptions.RequestException:
@@ -38,6 +38,7 @@ def send_to_primary(data):
 # 5. All backup replicas will update who the new primary replica is locally.
 async def trigger_leader_election(self):
     print("Leader election started...")
+    print("But for real this time")
 
     alive_servers = check_alive_servers()
 

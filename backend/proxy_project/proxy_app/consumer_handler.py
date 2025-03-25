@@ -2,8 +2,12 @@ import json
 import websockets
 import aiohttp
 import asyncio
+import requests
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .shared_state import SERVERS, PRIORITY, get_primary, update_primary
+from rest_framework import status
+from .leader_functions import check_alive_servers, notify_replicas
+from rest_framework.response import Response
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -63,7 +67,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                     break
         except websockets.exceptions.ConnectionClosed:
             # now we have to trigger leader election
-            self.trigger_leader_election()
+            print("Triggering Leader Election...")
+            await self.trigger_leader_election()
             pass
 
     # Send data from client to primary replica over websocket connection
@@ -71,6 +76,24 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.primary_connection.send(text_data)
     
     async def trigger_leader_election(self):
-        print(f"Leader election begins ...")
-        pass
+        print("Leader election started...")
+        print("But inside the consumer this time")
 
+        alive_servers = check_alive_servers()
+
+        if not alive_servers:
+            return Response(
+                {"error": "Primary and all backup replicas are unavailable."},
+                status = status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Sort array so that servers with lower indices are lowest in the SERVERS array.
+        # These servers at lower indices have higher priorities.
+        sorted_alive_servers = sorted(alive_servers, key=lambda x: x[0])
+
+        # Get replica with highest priority that responded:
+        new_primary_server_index , new_primary_server = sorted_alive_servers[0]
+        print(f'New primary server: {new_primary_server}')
+        update_primary(new_primary_server)
+        notify_replicas(new_primary_server_index)
+        pass
