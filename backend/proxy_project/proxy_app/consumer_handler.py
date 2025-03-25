@@ -27,6 +27,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             asyncio.create_task(self.listen_to_server())
             return
         except Exception as e:
+            print(e)
             print(f'Primary replica could not be reached.')
             await self.trigger_leader_election() 
 
