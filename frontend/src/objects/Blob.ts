@@ -28,9 +28,11 @@ export class Blob {
     }
 
     move(dx: number, dy: number, delta: number) {
-        const speedFactor = delta / 1000; 
-        this.x += dx * this.baseSpeed * speedFactor;
-        this.y += dy * this.baseSpeed * speedFactor;
+
+        const intended_x = this.x + (dx * this.baseSpeed * delta);
+        const intended_y = this.y + (dy * this.baseSpeed * delta);
+        this.x = Math.max(0, Math.min(intended_x, 1000));
+        this.y = Math.max(0, Math.min(intended_y, 1000));
 
         this.graphics.setPosition(this.x, this.y);
     }
@@ -38,4 +40,9 @@ export class Blob {
     getPosition() {
         return { x: this.x, y: this.y };
     }
+
+    destroy() {
+        this.graphics.destroy(); 
+    }
+
 }

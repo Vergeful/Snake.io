@@ -1,0 +1,50 @@
+{
+    // For testing
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Backend Server",
+            "type": "shell",
+            "command": "cmd",
+            "args": [
+              "/c",
+              "myenv\\Scripts\\activate && python manage.py runserver"
+            ],
+            "problemMatcher": [],
+            "group": { "kind": "build", "isDefault": true },
+            "presentation": { "panel": "shared", "group": "term1" },
+            "options": {
+                "cwd": "${workspaceFolder}/backend" 
+              }
+          },
+          {
+            "label": "Run Frontend 1",
+            "type": "shell",
+            "command": "npx vite --port 3000",
+            "problemMatcher": [],
+            "group": { "kind": "build", "isDefault": true },
+            "presentation": { "panel": "shared", "group": "term3" },
+            "options": {
+              "cwd": "${workspaceFolder}/frontend" 
+            }
+          },
+          {
+            "label": "Run Frontend 2",
+            "type": "shell",
+            "command": "npx vite --port 3001",
+            "problemMatcher": [],
+            "group": { "kind": "build", "isDefault": true },
+            "presentation": { "panel": "shared", "group": "term3" },
+            "options": {
+              "cwd": "${workspaceFolder}/frontend" 
+            }
+          },
+          {
+            "label": "Start All Services",
+            "dependsOn": ["Run Backend Server", "Run Frontend 1", "Run Frontend 2"],
+            "type": "shell",
+            "command": "echo 'All services started!'",
+            "group": { "kind": "build", "isDefault": true }
+          }
+    ]
+}

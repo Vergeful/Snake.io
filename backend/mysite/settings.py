@@ -137,8 +137,8 @@ CHANNEL_LAYERS = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:*",  # ✅ Allows all localhost ports
-    "http://127.0.0.1:*",  # ✅ Allows all 127.0.0.1 ports
+    "http://localhost:*", 
+    "http://127.0.0.1:*",  
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True 

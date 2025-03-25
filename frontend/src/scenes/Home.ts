@@ -80,7 +80,7 @@ export class Home extends Phaser.Scene {
           const playerID = response.data.player_id;
   
           // Start game
-          this.scene.start("Game", { playerName, playerColor, playerID });
+          this.scene.start("Game", { playerID });
   
       } catch (error) {
           console.error("Error sending player data:", error);
