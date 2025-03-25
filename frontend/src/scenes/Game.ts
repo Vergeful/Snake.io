@@ -56,7 +56,7 @@ export class Game extends Scene {
       //simulate lag
       setTimeout(() => {
         this.handleServerMessage(data);
-      }, 0);
+      }, 30);
     
     }
     // Create background with grid
@@ -248,9 +248,36 @@ export class Game extends Scene {
         delete this.food[data.id];
       }
 
-      if (data.player_id === this.playerID) {
+      if (String(data.player_id) === String(this.playerID)) {
         this.score = data.score;
+        this.player.setSize(data["size"]);
+        this.clientBlob.setSize(data["size"]);
       }
+      else{
+        this.otherPlayers[data.player_id].setSize(data["size"]);
+      }
+    }
+
+    if (data.type === "player_eaten") {
+      if (String(data.id) !== String(this.playerID)) {
+        this.otherPlayers[data.id].destroy();
+        delete this.otherPlayers[data.id];
+      }
+      else{
+        this.player.destroy();
+        this.clientBlob.destroy();
+      }
+
+      if (String(data.id_eater) === String(this.playerID)) {
+        this.player.setSize(data.size);
+        this.clientBlob.setSize(data.size);
+      }
+      else{
+        this.otherPlayers[data.id_eater].setSize(data.size);
+      }
+
+
+
     }
 
     if (data.type === "pong" && typeof data.time === "number") {

@@ -7,6 +7,7 @@ export class Blob {
     radius: number;
     x: number;
     y: number;
+    color: number;
 
     constructor(scene: Phaser.Scene, x: number, y: number, radius:number = 20,color: number = 0x00ff00) {
         this.scene = scene;
@@ -14,6 +15,7 @@ export class Blob {
         this.radius = radius;
         this.x = x;
         this.y = y;
+        this.color = color;
 
 
         this.graphics = this.scene.add.graphics();
@@ -43,6 +45,18 @@ export class Blob {
 
     destroy() {
         this.graphics.destroy(); 
+    }
+
+    setSize(newSize: number) {
+        this.radius = newSize;
+        this.draw(); 
+      }
+    
+    private draw() {
+        console.log("redraw");
+        this.graphics.clear();
+        this.graphics.fillStyle(this.color, 1);
+        this.graphics.fillCircle(0, 0, this.radius);
     }
 
 }
