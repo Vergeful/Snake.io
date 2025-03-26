@@ -17,5 +17,6 @@ def get_primary():
 def update_primary(new_server):
     with lock:
         global PRIMARY_SERVER
-        PRIMARY_SERVER = new_server
 
+        if PRIMARY_SERVER != new_server:
+            PRIMARY_SERVER = new_server

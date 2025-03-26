@@ -5,7 +5,7 @@ from rest_framework import status
 from .models import Player
 from .serializers import PlayerSerializer
 import requests
-from .shared_state import SERVERS, THIS_SERVER, get_primary, update_primary, PRIORITY
+from .shared_state import SERVERS, THIS_SERVER, get_primary, update_primary_server, PRIORITY
  
   
 @api_view(["POST"])
@@ -61,9 +61,9 @@ def update_primary(request):
     global THIS_SERVER
     global SERVERS
 
-    data = request.json()
+    data = request.data
     new_primary_server_index = data.get("new_index")
-    update_primary(SERVERS[new_primary_server_index])
+    update_primary_server(SERVERS[new_primary_server_index])
     return Response(
             {"message": f'Primary was updated to {SERVERS[new_primary_server_index]}'},
             status = status.HTTP_200_OK

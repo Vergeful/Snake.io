@@ -15,7 +15,7 @@ def get_primary():
     with lock:
         return PRIMARY_SERVER
 
-def update_primary(new_server):
+def update_primary_server(new_server):
     with lock:
         global PRIMARY_SERVER
 

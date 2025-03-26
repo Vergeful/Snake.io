@@ -96,4 +96,5 @@ class GameConsumer(AsyncWebsocketConsumer):
         print(f'New primary server: {new_primary_server}')
         update_primary(new_primary_server)
         notify_replicas(new_primary_server_index)
+        await self.connect_to_primary()
         pass
