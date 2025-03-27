@@ -21,7 +21,8 @@ def check_alive_servers():
 def notify_replicas(new_primary_server_index):
     for server in SERVERS:
         try:
-            response = requests.post(f"http://{server}/replica/update_primary/", json={"new_index": new_primary_server_index})
+            # Need timeout as it tries to send to failed primary as well which results in endless waiting
+            response = requests.post(f"http://{server}/replica/update_primary/", json={"new_index": new_primary_server_index}, timeout=2)
             if response.status_code == 200:
                 print(f"Replica updated with new primary: {server}")
         except requests.RequestException:
