@@ -52,8 +52,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.trigger_leader_election()
 
             # Send intial data from client to newly elected leader:
-            response = await self.primary_connection.send(text_data)
-            await self.send(response) 
+            # response = await self.primary_connection.send(text_data)
+            # await self.send(response) 
     
     async def listen_to_server(self):
         try:
@@ -67,8 +67,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                     break
         except websockets.exceptions.ConnectionClosed:
             # now we have to trigger leader election
-            print("Triggering Leader Election...")
-            await self.trigger_leader_election()
             pass
 
     # Send data from client to primary replica over websocket connection
