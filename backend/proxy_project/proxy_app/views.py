@@ -32,7 +32,7 @@ async def send_to_primary(data):
     try:
         json_data = json.loads(data.decode('utf-8'))
         # If primary server is working:
-        response = requests.post(f'http://{primary_server}/replica/create_player/', data=json_data, timeout=2)
+        response = requests.post(f'http://{primary_server}/replica/create_player/', data=json_data, timeout=120)
         print(f'Successfully sent to the primary server: {primary_server}')
         return response.json()
     except requests.exceptions.RequestException:
