@@ -33,6 +33,9 @@ export class Game extends Scene {
   private clientBlob!: Blob;
   private unprocessed_inputs: PlayerInput[] = [];
 
+  private useClientPrediction = true;
+  private useLerp = true;
+
 
 
   constructor() {
@@ -61,6 +64,16 @@ export class Game extends Scene {
         <br/><br/>
         <label>Packet Loss (%): <span id="lossValue">0</span></label>
         <input type="range" id="lossSlider" min="0" max="100" value="0" style="width: 100%">
+        <br/><br/>
+        <label>
+          <input type="checkbox" id="toggleCSP" checked />
+          Enable Client-Side Prediction
+        </label>
+        <br/>
+        <label>
+          <input type="checkbox" id="toggleLERP" checked />
+          Enable LERP for Other Players
+        </label>
       `;
       document.body.appendChild(ui);
     
@@ -72,6 +85,24 @@ export class Game extends Scene {
         document.getElementById("lossValue")!.innerText = e.target.value;
       });
     }
+
+    (document.getElementById("toggleCSP") as HTMLInputElement)?.addEventListener("change", (e: any) => {
+      this.useClientPrediction = e.target.checked;
+    
+      if (this.useClientPrediction) {
+        this.cameras.main.startFollow(this.clientBlob, true, 0.1, 0.1);
+        this.player.graphics.setAlpha(0.5);
+        this.clientBlob.graphics.setVisible(true);
+      } else {
+        this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+        this.player.graphics.setAlpha(1);
+        this.clientBlob.graphics.setVisible(false);
+      }
+    });
+    
+    (document.getElementById("toggleLERP") as HTMLInputElement)?.addEventListener("change", (e: any) => {
+      this.useLerp = e.target.checked;
+    });
 
     this.playerID = data?.playerID;
 
@@ -142,7 +173,9 @@ export class Game extends Scene {
     if (this.cursors.down?.isDown) dy += 1;
 
     // Client side prediction for smooth gameplay
-    this.clientBlob.move(dx,dy,(delta/1000));
+    if (this.useClientPrediction) {
+      this.clientBlob.move(dx, dy, (delta / 1000));
+    }
 
     // Updates unprocessed inputs list
     if (this.socket.readyState === WebSocket.OPEN && (dx || dy)) {
@@ -173,9 +206,12 @@ export class Game extends Scene {
     }
 
     // Smooth updates for other players
-    for (const id in this.otherPlayers) {
-      this.otherPlayers[id].updateInterpolatedPosition();
+    if (this.useLerp) {
+      for (const id in this.otherPlayers) {
+        this.otherPlayers[id].updateInterpolatedPosition();
+      }
     }
+    
 
     this.pingInterval += delta;
     if (this.pingInterval >= 1000) {
@@ -283,7 +319,13 @@ export class Game extends Scene {
         }
       }
       else {
-        this.otherPlayers[data.id].setTargetPosition(data.x, data.y);
+        if (this.useLerp) {
+          this.otherPlayers[data.id].setTargetPosition(data.x, data.y);
+        } else {
+          this.otherPlayers[data.id].x = data.x;
+          this.otherPlayers[data.id].y = data.y;
+          this.otherPlayers[data.id].graphics.setPosition(data.x, data.y);
+        }
       }
     }
 
