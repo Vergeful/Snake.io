@@ -4,7 +4,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import Player
 import random
 from .game_logic.game_util import generate_food
-from .game_logic.game_config import FOOD_LIST, GLOBAL_PLAYERS
+from .game_logic.game_config import FOOD_LIST, GLOBAL_PLAYERS, WORLD_BOUNDS
+
 
 """Functions for accesssing backend database through websockets"""
 @database_sync_to_async
@@ -57,8 +58,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         # Initializing the player configuration
         GLOBAL_PLAYERS[self.player_id] = {
-            "x": 400,  
-            "y": 300,
+            "x": random.randint(WORLD_BOUNDS["x_min"], WORLD_BOUNDS["x_max"]),  
+            "y": random.randint(WORLD_BOUNDS["y_min"], WORLD_BOUNDS["y_max"]),
             "size": 40,
             "speed": 150,
             "score": player.score,
