@@ -12,17 +12,23 @@ interface PlayerInput{
 
 export class Game extends Scene {
   private socket!: WebSocket;
-  private background!: Phaser.GameObjects.Graphics;
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private player!: Blob;
   private fpsText!: Phaser.GameObjects.Text;
   private pingText!: Phaser.GameObjects.Text;
   private pingInterval = 0;
   private lastPingSentTime = 0;
+  
+  // Player input setup
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  
+  // World variables
+  private background!: Phaser.GameObjects.Graphics;
+  private player!: Blob;
   private otherPlayers: { [id: string]: Blob } = {};
   private playerID!: string;
   private food: { [id: string]: Phaser.GameObjects.Graphics } = {};
   private score: number;
+
+  // For server reconciliation and client prediction
   private input_send: number = 0;
   private clientBlob!: Blob;
   private unprocessed_inputs: PlayerInput[] = [];
@@ -35,6 +41,38 @@ export class Game extends Scene {
 
   create(data: any) {
 
+    // Lag and Packet Loss UI
+    if (!document.getElementById("network-controls")) {
+      const ui = document.createElement("div");
+      ui.id = "network-controls";
+      ui.style.position = "fixed";
+      ui.style.top = "10px";
+      ui.style.right = "10px";
+      ui.style.padding = "10px";
+      ui.style.background = "rgba(0, 0, 0, 0.7)";
+      ui.style.color = "white";
+      ui.style.borderRadius = "8px";
+      ui.style.width = "220px";
+      ui.style.zIndex = "1000";
+      ui.style.fontFamily = "sans-serif";
+      ui.innerHTML = `
+        <label>Simulate Lag (ms): <span id="lagValue">30</span></label>
+        <input type="range" id="lagSlider" min="0" max="500" value="30" style="width: 100%">
+        <br/><br/>
+        <label>Packet Loss (%): <span id="lossValue">0</span></label>
+        <input type="range" id="lossSlider" min="0" max="100" value="0" style="width: 100%">
+      `;
+      document.body.appendChild(ui);
+    
+      // Live updating display
+      document.getElementById("lagSlider")?.addEventListener("input", (e: any) => {
+        document.getElementById("lagValue")!.innerText = e.target.value;
+      });
+      document.getElementById("lossSlider")?.addEventListener("input", (e: any) => {
+        document.getElementById("lossValue")!.innerText = e.target.value;
+      });
+    }
+
     this.playerID = data?.playerID;
 
     this.socket = new WebSocket(`ws://localhost:8000/ws/game/${this.playerID}/`);
@@ -45,18 +83,23 @@ export class Game extends Scene {
 
     // Handles incoming messages from server
     this.socket.onmessage = (event) => {
+
+      const lagSlider = document.getElementById("lagSlider") as HTMLInputElement;
+      const lossSlider = document.getElementById("lossSlider") as HTMLInputElement;
+      const lag = Number(lagSlider?.value || 0);
+      const loss = Number(lossSlider?.value || 0);
       
       // simulate packet loss
-      // if (Math.random() < 0.4) {
-      //   return; 
-      // }
+      if (Math.random() * 100 < loss) {
+        return; 
+      }
 
       const data = JSON.parse(event.data);
       
       //simulate lag
       setTimeout(() => {
         this.handleServerMessage(data);
-      }, 30);
+      }, lag);
     
     }
     // Create background with grid
@@ -127,6 +170,11 @@ export class Game extends Scene {
           input_number: this.input_send
         })
       );
+    }
+
+    // Smooth updates for other players
+    for (const id in this.otherPlayers) {
+      this.otherPlayers[id].updateInterpolatedPosition();
     }
 
     this.pingInterval += delta;
@@ -235,10 +283,7 @@ export class Game extends Scene {
         }
       }
       else {
-        this.otherPlayers[data.id]
-        this.otherPlayers[data.id].x = data.x;
-        this.otherPlayers[data.id].y = data.y;
-        this.otherPlayers[data.id].graphics.setPosition(data.x, data.y);
+        this.otherPlayers[data.id].setTargetPosition(data.x, data.y);
       }
     }
 
@@ -275,8 +320,6 @@ export class Game extends Scene {
       else{
         this.otherPlayers[data.id_eater].setSize(data.size);
       }
-
-
 
     }
 

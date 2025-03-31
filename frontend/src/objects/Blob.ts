@@ -9,6 +9,10 @@ export class Blob {
     y: number;
     color: number;
 
+    // For server smoothing
+    private targetX: number;
+    private targetY: number;
+
     constructor(scene: Phaser.Scene, x: number, y: number, radius:number = 20,color: number = 0x00ff00) {
         this.scene = scene;
         this.baseSpeed = 150;
@@ -16,6 +20,9 @@ export class Blob {
         this.x = x;
         this.y = y;
         this.color = color;
+
+        this.targetX = x;
+        this.targetY = y;
 
 
         this.graphics = this.scene.add.graphics();
@@ -36,6 +43,19 @@ export class Blob {
         this.x = Math.max(0, Math.min(intended_x, 1000));
         this.y = Math.max(0, Math.min(intended_y, 1000));
 
+        
+        this.graphics.setPosition(this.x, this.y);
+    }
+
+    setTargetPosition(x: number, y: number) {
+        this.targetX = x;
+        this.targetY = y;
+    }
+
+    updateInterpolatedPosition() {
+        const alpha = 0.1;
+        this.x = Phaser.Math.Linear(this.x, this.targetX, alpha);
+        this.y = Phaser.Math.Linear(this.y, this.targetY, alpha);
         this.graphics.setPosition(this.x, this.y);
     }
 

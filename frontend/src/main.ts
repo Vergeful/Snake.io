@@ -18,7 +18,8 @@ const config: Types.Core.GameConfig = {
     scene: [Home, MainGame],
     physics:{
         default: "arcade",
-    }
+    },
+
 };
 
 export default new Game(config);
