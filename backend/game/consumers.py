@@ -65,6 +65,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             "color": player.color,
             "player_inputs": [],
             "last_input_processed": 0,
+            "name": player.name
         }
 
         # Sends connecting websocket the pre-existing players
@@ -83,6 +84,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             "speed": GLOBAL_PLAYERS[self.player_id]["speed"],
             "size": GLOBAL_PLAYERS[self.player_id]["size"],
             "color": GLOBAL_PLAYERS[self.player_id]["color"],
+            "name": GLOBAL_PLAYERS[self.player_id]["name"],
         })
 
 

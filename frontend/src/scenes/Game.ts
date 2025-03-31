@@ -91,12 +91,12 @@ export class Game extends Scene {
     
       if (this.useClientPrediction) {
         this.cameras.main.startFollow(this.clientBlob, true, 0.1, 0.1);
-        this.player.graphics.setAlpha(0.5);
-        this.clientBlob.graphics.setVisible(true);
+        this.player.setAlpha(0.5);
+        this.clientBlob.setVisible(true);
       } else {
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-        this.player.graphics.setAlpha(1);
-        this.clientBlob.graphics.setVisible(false);
+        this.player.setAlpha(1);
+        this.clientBlob.setVisible(false);
       }
     });
     
@@ -135,7 +135,7 @@ export class Game extends Scene {
     }
     // Create background with grid
     this.background = this.add.graphics();
-    this.drawGrid(50, 1000, 1000);
+    this.drawGrid(50, 2000, 2000);
 
     // FPS display
     this.fpsText = this.add.text(10, 10, "FPS: 0", {
@@ -254,11 +254,11 @@ export class Game extends Scene {
 
     if (data.type === "all_players"){
       // player seen by the server
-      this.player = new Blob(this, data.players[this.playerID].x,data.players[this.playerID].y, data.players[this.playerID].size, parseInt("#CC8899"));
-      this.player.graphics.setAlpha(0.5);
+      this.player = new Blob(this, data.players[this.playerID].x,data.players[this.playerID].y, data.players[this.playerID].size, parseInt("#CC8899"), data.players[this.playerID].name);
+      this.player.setAlpha(0.5);
 
       // player seen by the client
-      this.clientBlob = new Blob(this, data.players[this.playerID].x,data.players[this.playerID].y, data.players[this.playerID].size, parseInt(data.players[this.playerID].color));
+      this.clientBlob = new Blob(this, data.players[this.playerID].x,data.players[this.playerID].y, data.players[this.playerID].size, parseInt(data.players[this.playerID].color), data.players[this.playerID].name);
       this.cameras.main.startFollow(this.clientBlob, true, 0.1, 0.1);
       this.cameras.main.setZoom(1);
 
@@ -266,8 +266,8 @@ export class Game extends Scene {
 
       for (const id in data.players) {
         if (String(id) !== String(this.playerID)) {
-            const { x, y, size, color } = data.players[id];
-            this.otherPlayers[id] = new Blob(this, x, y, size, color);
+            const { x, y, size, color, name } = data.players[id];
+            this.otherPlayers[id] = new Blob(this, x, y, size, color, name);
         }
       }
 
@@ -282,7 +282,7 @@ export class Game extends Scene {
 
     if (data.type === "player_joined"){
       if (String(data.id) !== String(this.playerID)) {
-        this.otherPlayers[data.id] = new Blob(this, data.x, data.y, data.size, data.color);
+        this.otherPlayers[data.id] = new Blob(this, data.x, data.y, data.size, data.color, data.name);
       }
     }
 
@@ -299,7 +299,7 @@ export class Game extends Scene {
         //Server updates local player position
         this.player.x = data.x;
         this.player.y = data.y;
-        this.player.graphics.setPosition(data.x, data.y);
+        this.player.setPos(data.x, data.y);
 
         //Reconciles client
         const serverLastInput = data.last_input_processed;
@@ -308,7 +308,7 @@ export class Game extends Scene {
         );
         this.clientBlob.x = data.x;
         this.clientBlob.y = data.y;
-        this.clientBlob.graphics.setPosition(data.x, data.y);
+        this.clientBlob.setPos(data.x, data.y);
 
         for (const input of this.unprocessed_inputs){
           this.clientBlob.move(
@@ -324,7 +324,7 @@ export class Game extends Scene {
         } else {
           this.otherPlayers[data.id].x = data.x;
           this.otherPlayers[data.id].y = data.y;
-          this.otherPlayers[data.id].graphics.setPosition(data.x, data.y);
+          this.otherPlayers[data.id].setPos(data.x, data.y);
         }
       }
     }
@@ -343,6 +343,14 @@ export class Game extends Scene {
       else{
         this.otherPlayers[data.player_id].setSize(data["size"]);
       }
+    }
+
+    if (data.type === "spawn_food"){
+      const foodObj = this.add.graphics();
+      foodObj.fillStyle(0xff0000, 1); // Red color
+      foodObj.fillCircle(0, 0, 5);
+      foodObj.setPosition(data.food.x, data.food.y);
+      this.food[data.food.id] = foodObj;
     }
 
     if (data.type === "player_eaten") {

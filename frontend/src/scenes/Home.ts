@@ -3,9 +3,8 @@ import axios from "axios";
 
 export class Home extends Phaser.Scene {
   private nameInput!: HTMLInputElement;
-  private colorSelect!: HTMLSelectElement;
+  private colorInput!: HTMLInputElement;
   private playButton!: HTMLButtonElement;
-  private selectedColor: number = 0x00ff00; // Default color
 
   constructor() {
     super("Home");
@@ -13,100 +12,152 @@ export class Home extends Phaser.Scene {
 
   create() {
     this.createUI();
-
     this.scale.on("resize", this.resizeUI, this);
   }
 
   createUI() {
-    // Get center coordinates dynamically
-    const { width, height } = this.scale;
+    const container = document.createElement("div");
+    container.id = "ui-container";
+    this.applyContainerStyle(container);
+    document.body.appendChild(container);
+    (this as any).uiContainer = container;
 
-    // Name Input (HTML)
+    // Logo
+    const logo = document.createElement("img");
+    logo.src = "/agarish.png"; // Better path for static assets
+    logo.alt = "Agar.ish Logo";
+    logo.style.width = "700px";
+    logo.style.marginBottom = "20px";
+    container.appendChild(logo);
+
+    // Name input
     this.nameInput = document.createElement("input");
-    this.nameInput.type = "text";
-    this.nameInput.placeholder = "Enter your name...";
-    this.styleHTMLElement(this.nameInput, width / 2, height * 0.35);
-    document.body.appendChild(this.nameInput);
+    this.nameInput.placeholder = "Enter your name";
+    this.styleNameInput(this.nameInput);
+    container.appendChild(this.nameInput);
 
-    // Color Selection Text
-    this.add.text(width / 2, height * 0.45, "Select Your Color:", {
-      fontSize: "18px",
-      color: "#000000",
-    }).setOrigin(0.5);
+    // Color label + input wrapper
+    const colorWrapper = document.createElement("div");
+    colorWrapper.style.display = "flex";
+    colorWrapper.style.alignItems = "center";
+    colorWrapper.style.gap = "10px";
 
-    // Color Dropdown (HTML)
-    this.colorSelect = document.createElement("select");
-    this.styleHTMLElement(this.colorSelect, width / 2, height * 0.5);
-    document.body.appendChild(this.colorSelect);
+    const colorLabel = document.createElement("label");
+    colorLabel.innerText = "Choose Color:";
+    this.styleColorLabel(colorLabel);
+    colorWrapper.appendChild(colorLabel);
 
-    const colors = [
-      { name: "Green", value: "0x00ff00" },
-      { name: "Red", value: "0xff0000" },
-      { name: "Blue", value: "0x0000ff" },
-      { name: "Yellow", value: "0xffff00" },
-      { name: "Pink", value: "0xff00ff" },
-    ];
+    this.colorInput = document.createElement("input");
+    this.colorInput.type = "color";
+    this.colorInput.value = "#00ff00";
+    this.styleColorInput(this.colorInput);
+    colorWrapper.appendChild(this.colorInput);
 
-    colors.forEach((color) => {
-      const option = document.createElement("option");
-      option.value = color.value;
-      option.innerText = color.name;
-      this.colorSelect.appendChild(option);
-    });
+    container.appendChild(colorWrapper);
 
-    // Play Button (HTML)
+    // Play button
     this.playButton = document.createElement("button");
     this.playButton.innerText = "Play";
-    this.styleHTMLElement(this.playButton, width / 2, height * 0.6);
-    document.body.appendChild(this.playButton);
+    this.stylePlayButton(this.playButton);
+    container.appendChild(this.playButton);
 
+    // Play click event
     this.playButton.addEventListener("click", async () => {
       const playerName = this.nameInput.value || "Player";
-      const playerColor = this.colorSelect.value;
-  
+      const playerColor = "0x" + this.colorInput.value.slice(1);
+
       try {
-          const response = await axios.post("http://127.0.0.1:8000/game/create_player/", {
-              name: playerName,
-              color: playerColor,
-          });
-  
-          console.log("Player Created:", response.data);
-  
-          // Cleanup UI elements
-          document.body.removeChild(this.nameInput);
-          document.body.removeChild(this.colorSelect);
-          document.body.removeChild(this.playButton);
+        const response = await axios.post("http://127.0.0.1:8000/game/create_player/", {
+          name: playerName,
+          color: playerColor,
+        });
 
-          const playerID = response.data.player_id;
-  
-          // Start game
-          this.scene.start("Game", { playerID });
-  
+        console.log("Player Created:", response.data);
+        document.body.removeChild(container);
+
+        const playerID = response.data.player_id;
+        this.scene.start("Game", { playerID });
       } catch (error) {
-          console.error("Error sending player data:", error);
-          alert("Failed to start the game.");
+        console.error("Error sending player data:", error);
+        alert("Failed to start the game.");
       }
-  });
+    });
+
+    this.resizeUI(this.scale.gameSize);
   }
 
-  // Function to style HTML elements and position them
-  private styleHTMLElement(element: HTMLElement, x: number, y: number) {
-    element.style.position = "absolute";
-    element.style.left = `${x - 75}px`; 
-    element.style.top = `${y}px`;
-    element.style.width = "150px";
-    element.style.textAlign = "center";
-    element.style.fontSize = "18px";
-    element.style.padding = "5px";
-  }
-
-  // Resize UI when the window is resized
   private resizeUI(gameSize: Phaser.Structs.Size) {
-    const { width, height } = gameSize;
+    const container = (this as any).uiContainer as HTMLDivElement;
+    if (container) {
+      container.style.width = `${gameSize.width}px`;
+      container.style.height = `${gameSize.height}px`;
+    }
+  }
 
-    // Update HTML element positions
-    this.styleHTMLElement(this.nameInput, width / 2, height * 0.35);
-    this.styleHTMLElement(this.colorSelect, width / 2, height * 0.5);
-    this.styleHTMLElement(this.playButton, width / 2, height * 0.6);
+  private applyContainerStyle(container: HTMLDivElement) {
+    Object.assign(container.style, {
+      position: "absolute",
+      top: "0",
+      left: "0",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "20px",
+      backgroundColor: "transparent",
+      zIndex: "1000",
+      pointerEvents: "auto",
+    });
+  }
+
+  // Style functions for each element
+  private styleNameInput(element: HTMLInputElement) {
+    Object.assign(element.style, {
+      fontSize: "18px",
+      padding: "10px",
+      borderRadius: "8px",
+      border: "1px solid #aaa",
+      width: "220px",
+      textAlign: "center",
+      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    });
+  }
+
+  private styleColorInput(element: HTMLInputElement) {
+    Object.assign(element.style, {
+      width: "30px",
+      height: "30px",
+      border: "none",
+      cursor: "pointer",
+      background: "rgba(255, 255, 255, 0)"
+    });
+  }
+
+  private styleColorLabel(label: HTMLLabelElement) {
+    Object.assign(label.style, {
+      fontSize: "18px",
+      color: "rgb(78, 78, 78)",
+      fontFamily: "Arial",
+      flex: "1",
+      textAlign: "left",
+    });
+  }
+
+  private stylePlayButton(element: HTMLButtonElement) {
+    Object.assign(element.style, {
+      fontSize: "18px",
+      padding: "10px 20px",
+      borderRadius: "8px",
+      border: "none",
+      backgroundColor: "rgb(143, 210, 127)",
+      color: "#fff",
+      cursor: "pointer",
+      boxShadow: "0 2px 4px rgba(0,0,0,0.5)",
+      width: "220px",
+
+    });
+
+    element.onmouseenter = () => element.style.backgroundColor = "#45a049";
+    element.onmouseleave = () => element.style.backgroundColor = "#4CAF50";
   }
 }

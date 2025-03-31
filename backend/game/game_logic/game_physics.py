@@ -1,6 +1,7 @@
 from game.game_logic.game_config import GLOBAL_PLAYERS, FOOD_LIST
 from game.consumers import broadcast
 from game.game_logic.game_config import WORLD_BOUNDS
+from game.game_logic.game_util import spawn_food
 
 TICK_RATE = 60
 
@@ -40,6 +41,7 @@ async def process_game_tick():
                 FOOD_LIST.remove(food)
                 player["score"] += 1
                 player["size"] += 1  # Simple growth mechanic
+                new_food = spawn_food()
 
                 await broadcast({
                     "type": "food_eaten",
@@ -47,6 +49,11 @@ async def process_game_tick():
                     "player_id": player_id,
                     "score": player["score"],
                     "size": player["size"]
+                })
+
+                await broadcast({
+                    "type": "spawn_food",
+                    "food": new_food 
                 })
 
     # Handle player collision (like agar.io)
