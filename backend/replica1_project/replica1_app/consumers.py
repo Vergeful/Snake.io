@@ -43,7 +43,16 @@ def generate_food():
         for i in range(FOOD_COUNT)
     ]
 
+class ReplicaConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.accept()
 
+    async def disconnect(self, close_code):
+        pass
+
+    async def receive(self, text_data):
+        # update the database
+        pass
 
 class PlayerConsumer(AsyncWebsocketConsumer):
     
