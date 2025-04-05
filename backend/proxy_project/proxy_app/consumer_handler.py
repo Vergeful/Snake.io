@@ -9,25 +9,37 @@ from rest_framework import status
 from .leader_functions import check_alive_servers, notify_replicas
 from rest_framework.response import Response
 
+# Logical clock at the proxy starts at 0:
+LAMPORT_CLOCK = 0
+
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         await self.accept()
         self.primary_server = None
         self.primary_connection = None
-
         # Get player_id from url to access websocket with primary replica:
         self.player_id = self.scope["url_route"]["kwargs"]["player_id"]
-
         await self.connect_to_primary()
 
     # When the client establishes a websocket connection with the proxy, try to establish connection with primary:
     async def connect_to_primary(self):
+        global LAMPORT_CLOCK
+
         # Check if primary server is up:
         primary_shared = get_primary()
         try:
             self.primary_connection = await websockets.connect(f'ws://{primary_shared}/ws/game/{self.player_id}')
             self.primary_server = 'ws://{primary_shared}/ws/game/{self.player_id}'
             print(f'Primary server: {primary_shared}')
+
+            # Request Lamport clock synchronization from primary server when it connects:
+            await self.primary_connection.send(json.dumps({"type": "get_lamport_clock"}))
+            # Wait for the response to sync clocks:
+            response = await self.primary_connection.recv()
+            primary_clock = json.loads(response).get("lamport_clock", LAMPORT_CLOCK)
+            self.lamport_clock = max(self.lamport_clock, primary_clock)
+
+
             asyncio.create_task(self.listen_to_server())
             return
         except Exception as e:
@@ -39,12 +51,11 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         # Try to send data from client to primary replica:
-        try:            
-            # Set a timeout for the primary server response:
-            await self.primary_connection.send(text_data)
-
+        try:       
+            response = await self.send_to_primary(text_data)
+            
             # Send the response back to the client:
-            # await self.send(response)            
+            await self.send(response)            
         
         except Exception as e:
             print(f"Primary server error: {e}")
@@ -52,8 +63,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.trigger_leader_election()
 
             # Send intial data from client to newly elected leader:
-            # response = await self.primary_connection.send(text_data)
-            # await self.send(response) 
+            response = await self.primary_connection.send(text_data)
+            await self.send(response) 
     
     async def listen_to_server(self):
         try:
@@ -71,7 +82,15 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     # Send data from client to primary replica over websocket connection
     async def send_to_primary(self, text_data):
-        await self.primary_connection.send(text_data)
+        global LAMPORT_CLOCK
+
+        # Increment clock for incoming data to ensure consistent writes at the primary server:
+        LAMPORT_CLOCK += 1
+        data = json.loads(text_data)
+        data["timestamp"] = LAMPORT_CLOCK
+
+        response = await self.primary_connection.send(json.dumps(data))
+        return response
     
     async def trigger_leader_election(self):
         print("Leader election started...")
