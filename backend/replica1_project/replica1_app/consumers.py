@@ -32,6 +32,8 @@ WORLD_BOUNDS = {
 FOOD_COUNT = 20
 FOOD_LIST = [] 
 
+CURRENT_STAMP = 0
+
 def generate_food():
     """
     Creates random food positions in the world
@@ -51,7 +53,15 @@ class ReplicaConsumer(AsyncWebsocketConsumer):
         pass
 
     async def receive(self, text_data):
-        # update the database
+        primary_data = json.loads(text_data)
+
+        timestamp = primary_data.get("timestamp")
+
+        if int(timestamp) > CURRENT_STAMP:
+            CURRENT_STAMP = int(timestamp)
+
+            # update the data now that we know that this is an update we actually need to apply
+
         pass
 
 class PlayerConsumer(AsyncWebsocketConsumer):
