@@ -69,3 +69,12 @@ def update_primary(request):
             status = status.HTTP_200_OK
         )
 
+
+@api_view(["POST"])
+def update_local_food_list(request):
+    food_list = request.data.get("food_list", [])
+    #  Update food list that is used in the consumer socket:
+    update_local_food_list(food_list)
+    return Response({"status": "ok", "received_count": len(food_list)})
+
+

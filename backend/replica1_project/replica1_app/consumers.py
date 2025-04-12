@@ -48,7 +48,7 @@ async def propagate_food_list_to_replicas(food_data):
         if server != THIS_SERVER:
             try:
                 # This endpoint has not been created yet:
-                response = requests.post(f"http://{server}/replica/update_food_list/", json=food_data)
+                response = requests.post(f"http://{server}/replica/update_food_list/", json={"food_list": FOOD_LIST})
                 if response.status_code == 200:
                     print(f"Successfully sent food list to {server}")
                 else:
@@ -312,3 +312,12 @@ class ReplicaConsumer(AsyncWebsocketConsumer):
 
             PLAYERS[str(data["id"])]["x"] = new_x
             PLAYERS[str(data["id"])]["y"] = new_y
+
+
+# When the primary server generates a random food_list, it is received at the backup replicas:
+def update_food_list_from_propagation(food_list):
+    global THIS_SERVER
+    global FOOD_LIST
+    FOOD_LIST = food_list
+    print(f'Food list was updated at replica: {THIS_SERVER}')
+    
