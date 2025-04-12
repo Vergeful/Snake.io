@@ -6,6 +6,7 @@ from .models import Player
 from .serializers import PlayerSerializer
 import requests
 from .shared_state import SERVERS, THIS_SERVER, get_primary, update_primary_server
+from .consumers import update_food_list_from_propagation
 import random
 
  
@@ -80,5 +81,5 @@ def update_primary(request):
 def update_local_food_list(request):
     food_list = request.data.get("food_list", [])
     #  Update food list that is used in the consumer socket:
-    update_local_food_list(food_list)
+    update_food_list_from_propagation(food_list)
     return Response({"status": "ok", "received_count": len(food_list)})

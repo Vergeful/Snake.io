@@ -11,7 +11,7 @@ async def propagate_food_list_to_replicas(food_list):
         if server != THIS_SERVER:
             try:
                 # This endpoint has not been created yet:
-                response = requests.post(f"http://{server}/replica/update_food_list/", json={"food_list": food_list})
+                response = requests.post(f"http://{server}/replica/update_food_list/", data={"food_list": food_list})
                 if response.status_code == 200:
                     print(f"Successfully sent food list to {server}")
                 else:
