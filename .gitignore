@@ -1,0 +1,6 @@
+.venv/
+backend/venv/
+**/__pycache__/
+backend/replica_project/db_replica1.sqlite3
+backend/replica_project/db_replica2.sqlite3
+backend/replica_project/db.sqlite3
