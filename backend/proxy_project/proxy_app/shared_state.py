@@ -5,7 +5,7 @@ SERVERS = ['localhost:8001', 'localhost:8002', 'localhost:8003', 'localhost:8004
 PRIMARY_SERVER = SERVERS[0]
 
 # For leader election, indices correspond with the server array:
-PRIORITY = [3,2,1]
+PRIORITY = [5,4,3,2,1]
 
 # Since our application uses multiple threads (Daphne), we need to avoid race conditions:
 lock = threading.Lock()

@@ -32,14 +32,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.primary_server = 'ws://{primary_shared}/ws/game/{self.player_id}'
             print(f'Primary server: {primary_shared}')
 
-            # Request Lamport clock synchronization from primary server when it connects:
-            await self.primary_connection.send(json.dumps({"type": "get_lamport_clock"}))
-            # Wait for the response to sync clocks:
-            response = await self.primary_connection.recv()
-            primary_clock = json.loads(response).get("lamport_clock", LAMPORT_CLOCK)
-            self.lamport_clock = max(self.lamport_clock, primary_clock)
-
-
             asyncio.create_task(self.listen_to_server())
             return
         except Exception as e:

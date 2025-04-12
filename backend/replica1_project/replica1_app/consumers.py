@@ -1,30 +1,14 @@
 import json
-from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
-from .models import Player
 import random
 import asyncio
-import requests
-from .shared_state import SERVERS, THIS_SERVER, get_primary, update_primary_server, PRIORITY
 from collections import deque
 from heapq import heappush, heappop
-import websockets
+from .shared_state import SERVERS, THIS_SERVER, get_primary, update_primary_server
+from .database_functions import get_player,get_all_players, update_player_position, get_player_position, delete_player
+from .propagate_functions import propagate_food_list_to_replicas, propagate_event_to_replicas
 
-# SERVERS = ['ws://localhost:8001/ws/game/', 'ws://localhost:8002/ws/game/', 'ws://localhost:8003/ws/game/']
-
-"""Functions for accesssing database through websockets"""
-@database_sync_to_async
-def get_player(player_id):
-    from .models import Player
-    return Player.objects.get(id=player_id)
-
-@database_sync_to_async
-def save_player(player):
-    from .models import Player
-    player.save()
-
-
-"""Constants for world and server configuration"""
+# Constants for world and server configuration:
 TICK_RATE = 60
 WORLD_BOUNDS = {
     "x_min": 0,
@@ -34,47 +18,13 @@ WORLD_BOUNDS = {
 }
 FOOD_COUNT = 20
 FOOD_LIST = [] 
-PLAYERS = {}
 
 # Lamport clock and priority queue:
 LAMPORT_CLOCK = 0
 EVENT_QUEUE = deque()
 
-# Send created food list to replicas on initial connection:
-async def propagate_food_list_to_replicas(food_data):
-    global SERVERS
-    global THIS_SERVER
-    for server in SERVERS:
-        if server != THIS_SERVER:
-            try:
-                # This endpoint has not been created yet:
-                response = requests.post(f"http://{server}/replica/update_food_list/", json={"food_list": FOOD_LIST})
-                if response.status_code == 200:
-                    print(f"Successfully sent food list to {server}")
-                else:
-                    print(f"Failed to send food list to {server}")
-            except:
-                print(f"Server did not respond: {server}")
-
-# Send message to replicas over websocket:
-async def propagate_event_to_replicas(event_data):
-    global SERVERS
-    global THIS_SERVER
-    # Send WebSocket messages to all replica servers
-    for server in SERVERS:
-        if server != THIS_SERVER:
-            try:
-                # This websocket class has not been created fully, see below:
-                async with websockets.connect(f'ws://{server}/ws/propagated_data') as websocket:
-                    await websocket.send(json.dumps(event_data))
-                    print(f"Successfully sent event to {server}")
-            except Exception as e:
-                print(f"Server did not respond: {server}")
-
+# Creates random food positions in the world:
 def generate_food():
-    """
-    Creates random food positions in the world
-    """
     global FOOD_LIST
     FOOD_LIST = [
         {"id": i, "x": random.randint(WORLD_BOUNDS["x_min"], WORLD_BOUNDS["x_max"]),
@@ -82,28 +32,10 @@ def generate_food():
         for i in range(FOOD_COUNT)
     ]
 
+# Handles game connection from proxy (from frontend):
 class PlayerConsumer(AsyncWebsocketConsumer):
-    
-    # Keeps track of all the player data in the server
-    """
-    Keeps track of all the player data in the server
-
-    json structure
-    player_id: string : {
-        "x": number
-        "y": number
-        "size": number
-        "speed": number
-        "score": number
-        "color": string
-    }
-    """
     async def connect(self):
         global FOOD_LIST
-        global PLAYERS
-        """
-        Handles connection of websocket from frontend
-        """
 
         # Adding players to group:
         self.room_name= "game_room"
@@ -116,52 +48,39 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         # Generating a food list in none is initialized:
         if not FOOD_LIST:
             generate_food()
-            # Notify replicas of new food list:
-            await propagate_food_list_to_replicas(FOOD_LIST)
+            await propagate_food_list_to_replicas(FOOD_LIST)   # Notify replicas of new food list
 
-        # Get player id from url:
-        self.player_id = self.scope["url_route"]["kwargs"]["player_id"]
-        player = await get_player(self.player_id)
-
-        # Initializing the player configuration
-        PLAYERS[self.player_id] = {
-            "x": 400,  
-            "y": 300,
-            "size": 40,
-            "speed": 150,
-            "score": player.score,
-            "color": player.color,  
-        }
+        self.player_id = self.scope["url_route"]["kwargs"]["player_id"]  # Get player id from url
+        players = await get_all_players()                                # Get player from DB
 
         # Sends connecting websocket the pre-existing players
         await self.send(json.dumps({
             "type": "all_players", 
-            "players": PLAYERS,
+            "players": {str(player["id"]): player for player in players},
             "food": FOOD_LIST
-            }))
+        }))
 
-        # Broadcast to other socket in group of joined player
+        player = await get_player(self.player_id)                       # Get current player
+
+        # Broadcast to other sockets in group of newly joined player:
         await self.broadcast({
             "type": "player_joined",
             "id": self.player_id,
-            "x": PLAYERS[self.player_id]["x"],
-            "y": PLAYERS[self.player_id]["y"],
-            "speed": PLAYERS[self.player_id]["speed"],
-            "size": PLAYERS[self.player_id]["size"],
-            "color": PLAYERS[self.player_id]["color"],
+            "x": player.x,
+            "y": player.y,
+            "speed": player.speed,
+            "size": player.size,
+            "color": player.color,
         })
 
-
+    # Handles websocket disconnection:
     async def disconnect(self, close_code):
-        global PLAYERS
-        """
-        Handles disconnected websocket
-        """
-        if self.player_id in PLAYERS:
-            del PLAYERS[self.player_id]
-            await self.broadcast({"type": "player_left", "id": self.player_id})
+        await delete_player(self.player_id)                             # Remove player from DB
+        await self.broadcast({
+            "type": "player_left", 
+            "id": self.player_id
+        })
 
-    
     def check_collision(self, player, food):
         """
         Check if a player collides with a food piece
@@ -171,10 +90,6 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):     
         global LAMPORT_CLOCK
-
-        """
-        Receive a message from the WebSocket
-        """
         # If the player does not exist:
         try:
             player = await get_player(self.player_id)
@@ -199,13 +114,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
 
     async def process_event(self, data):
-        global PLAYERS
-
         if data["type"] == "move":
             pid = str(data["id"])
-
-            if pid not in PLAYERS:
-                return
 
             intended_x = data["x"]
             intended_y = data["y"]
@@ -213,17 +123,13 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             new_x = max(WORLD_BOUNDS["x_min"], min(WORLD_BOUNDS["x_max"], intended_x))
             new_y = max(WORLD_BOUNDS["y_min"], min(WORLD_BOUNDS["y_max"], intended_y))
 
-            PLAYERS[str(data["id"])]["x"] = new_x
-            PLAYERS[str(data["id"])]["y"] = new_y
+            await update_player_position(pid, new_x, new_y)
 
 
+    # Game tick loop:
     async def game_loop(self):
         global EVENT_QUEUE
-        global PLAYERS
 
-        """
-        Game tick loop
-        """
         try:
             while True:
                 await asyncio.sleep(1/ TICK_RATE)
@@ -238,11 +144,13 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                 if event:
                     await propagate_event_to_replicas(event)
 
+                curr_player = await get_player_position(self.player_id)
+
                 await self.broadcast({
                     "type": "update",
                     "id": self.player_id,
-                    "x": PLAYERS[self.player_id]["x"],
-                    "y": PLAYERS[self.player_id]["y"]
+                    "x": curr_player["x"],
+                    "y": curr_player["y"]
                 })
 
         except asyncio.CancelledError:
@@ -296,13 +204,8 @@ class ReplicaConsumer(AsyncWebsocketConsumer):
 
 
     async def process_event(self, data):
-        global PLAYERS
-
         if data["type"] == "move":
             pid = str(data["id"])
-
-            if pid not in PLAYERS:
-                return
 
             intended_x = data["x"]
             intended_y = data["y"]
@@ -310,8 +213,7 @@ class ReplicaConsumer(AsyncWebsocketConsumer):
             new_x = max(WORLD_BOUNDS["x_min"], min(WORLD_BOUNDS["x_max"], intended_x))
             new_y = max(WORLD_BOUNDS["y_min"], min(WORLD_BOUNDS["y_max"], intended_y))
 
-            PLAYERS[str(data["id"])]["x"] = new_x
-            PLAYERS[str(data["id"])]["y"] = new_y
+            await update_player_position(pid, new_x, new_y)
 
 
 # When the primary server generates a random food_list, it is received at the backup replicas:
@@ -319,5 +221,5 @@ def update_food_list_from_propagation(food_list):
     global THIS_SERVER
     global FOOD_LIST
     FOOD_LIST = food_list
-    print(f'Food list was updated at replica: {THIS_SERVER}')
+    print(f'Food list was updated at this replica: {THIS_SERVER}')
     

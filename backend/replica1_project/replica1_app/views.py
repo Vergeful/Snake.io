@@ -5,13 +5,20 @@ from rest_framework import status
 from .models import Player
 from .serializers import PlayerSerializer
 import requests
-from .shared_state import SERVERS, THIS_SERVER, get_primary, update_primary_server, PRIORITY
+from .shared_state import SERVERS, THIS_SERVER, get_primary, update_primary_server
+import random
+
  
   
 @api_view(["POST"])
 def create_player(request):
     data = request.POST.dict()
     print('What we get: ', data)
+
+
+    # Inject random spawn coordinates within world bounds
+    data["x"] = random.randint(100, 900)
+    data["y"] = random.randint(100, 900)
 
     serializer = PlayerSerializer(data=data)
     if serializer.is_valid():
@@ -68,7 +75,6 @@ def update_primary(request):
             {"message": f'Primary was updated to {SERVERS[new_primary_server_index]}'},
             status = status.HTTP_200_OK
         )
-
 
 @api_view(["POST"])
 def update_local_food_list(request):
