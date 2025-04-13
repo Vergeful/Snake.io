@@ -1,7 +1,7 @@
 # Single source of truth for views and consumers files:
 import threading, os
 
-SERVERS = ['localhost:8001', 'localhost:8002', 'localhost:8003', 'localhost:8004', 'localhost:8005']
+SERVERS = ['127.0.0.1:8001', '127.0.0.1:8002', '127.0.0.1:8003', '127.0.0.1:8004', '127.0.0.1:8005']
 PRIMARY_SERVER = SERVERS[0]
 
 replica_num = os.environ.get('REPLICA_NUM')
