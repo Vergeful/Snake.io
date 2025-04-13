@@ -44,11 +44,12 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         # Try to send data from client to primary replica:
+        
         try:       
             response = await self.send_to_primary(text_data)
             
             # Send the response back to the client:
-            await self.send(response)            
+            # await self.send(response)            
         
         except Exception as e:
             print(f"Primary server error: {e}")
@@ -56,8 +57,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.trigger_leader_election()
 
             # Send intial data from client to newly elected leader:
-            response = await self.primary_connection.send(text_data)
-            await self.send(response) 
+            #response = await self.primary_connection.send(text_data)
+            #await self.send(response)         
     
     async def listen_to_server(self):
         try:
