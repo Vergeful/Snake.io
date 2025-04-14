@@ -8,13 +8,13 @@
             "command": "cmd",
             "args": [
               "/c",
-              "myenv\\Scripts\\activate && python manage.py runserver"
+              "..\\myenv\\Scripts\\activate && python manage.py runserver"
             ],
             "problemMatcher": [],
             "group": { "kind": "build", "isDefault": true },
             "presentation": { "panel": "shared", "group": "term1" },
             "options": {
-                "cwd": "${workspaceFolder}/backend" 
+                "cwd": "${workspaceFolder}/backend/game_server" 
               }
           },
           {
