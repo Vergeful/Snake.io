@@ -108,7 +108,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         # If event's timestamp is newer, add it to the queue:
         if timestamp > LAMPORT_CLOCK:
-            LAMPORT_CLOCK = max(LAMPORT_CLOCK, timestamp) + 1
+            LAMPORT_CLOCK = timestamp
             heappush(EVENT_QUEUE, (timestamp,data))
         else:
             print(f"Discarded event with out-of-order timestamp: {timestamp}")
@@ -195,7 +195,7 @@ class ReplicaConsumer(AsyncWebsocketConsumer):
            
            # If the event's timestamp is greater or equal to our Lamport clock, process it
             if timestamp > LAMPORT_CLOCK:
-                LAMPORT_CLOCK = max(LAMPORT_CLOCK, timestamp) + 1   # update lamport clock if necessary
+                LAMPORT_CLOCK = timestamp   # update lamport clock if necessary
                 await self.process_event(event)                     # process the event
             else:
                 print(f"Event with timestamp {timestamp} is outdated so we discard it.")
