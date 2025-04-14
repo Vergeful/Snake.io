@@ -21,7 +21,8 @@ FOOD_LIST = []
 
 # Lamport clock and priority queue:
 LAMPORT_CLOCK = 0
-EVENT_QUEUE = deque()
+EVENT_QUEUE = []
+
 
 # Creates random food positions in the world:
 def generate_food():
@@ -108,7 +109,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         # If event's timestamp is newer, add it to the queue:
         if timestamp > LAMPORT_CLOCK:
             LAMPORT_CLOCK = max(LAMPORT_CLOCK, timestamp) + 1
-            heappush(EVENT_QUEUE, (timestamp, data))
+            heappush(EVENT_QUEUE, (timestamp,data))
         else:
             print(f"Discarded event with out-of-order timestamp: {timestamp}")
 
