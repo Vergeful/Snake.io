@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class ProxyAppConfig(AppConfig):
+class GameConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'proxy_app'
+    name = 'game'
