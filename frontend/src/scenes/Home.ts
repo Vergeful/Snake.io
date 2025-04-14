@@ -67,24 +67,10 @@ export class Home extends Phaser.Scene {
       const playerColor = "0x" + this.colorInput.value.slice(1);
 
       try {
-<<<<<<< HEAD
         const response = await axios.post("http://127.0.0.1:8000/game/create_player/", {
           name: playerName,
           color: playerColor,
         });
-=======
-          const response = await axios.post("http://127.0.0.1:8000/proxy/create_player/", {
-              name: playerName,
-              color: playerColor,
-          });
-  
-          console.log("Player Created:", response.data);
-  
-          // Cleanup UI elements
-          document.body.removeChild(this.nameInput);
-          document.body.removeChild(this.colorSelect);
-          document.body.removeChild(this.playButton);
->>>>>>> 6f0573705e1174cf478d365def2f4367eacb3040
 
         console.log("Player Created:", response.data);
         document.body.removeChild(container);
