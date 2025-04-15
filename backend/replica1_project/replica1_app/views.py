@@ -13,9 +13,8 @@ import random
   
 @api_view(["POST"])
 def create_player(request):
-    data = request.POST.dict()
+    data = request.data.copy()      # Make a mutable copy
     print('What we get: ', data)
-
 
     # Inject random spawn coordinates within world bounds
     data["x"] = random.randint(100, 900)
@@ -25,7 +24,7 @@ def create_player(request):
     if serializer.is_valid():
         player = serializer.save()   # Save to database
 
-        print(player.id)
+        print(player.id, player.x, player.y, player.size, player.speed, player.score, player.color)
 
         # If this server is the primary replica, propagate the request to other replicas:
         if is_primary():

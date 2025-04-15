@@ -5,4 +5,4 @@ from .models import Player
 class PlayerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Player
-        fields = ["id", "name", "color"]  # Only accept name and color
+        fields = ["id", "name", "color", "x", "y", "speed", "score", "size"]

@@ -150,8 +150,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                 await self.broadcast({
                     "type": "update",
                     "id": self.player_id,
-                    "x": curr_player["x"],
-                    "y": curr_player["y"]
+                    "x": curr_player.x,
+                    "y": curr_player.y
                 })
 
         except asyncio.CancelledError:
