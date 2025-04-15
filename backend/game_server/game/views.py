@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Player
 from .serializers import PlayerSerializer
+from .shared_state import SERVERS, get_primary, update_primary_server
 
 
 @api_view(["POST"])
@@ -28,3 +29,22 @@ def create_player(request):
         )
     # Error encountered
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET"])
+def health_check(request):
+     return Response(
+            {"status": "OK"},
+            status = status.HTTP_200_OK
+        )
+
+@api_view(["POST"])
+def update_primary(request):
+    global SERVERS
+
+    data = request.data
+    new_primary_server_index = data.get("new_index")
+    update_primary_server(SERVERS[new_primary_server_index])
+    return Response(
+            {"message": f'Primary was updated to {SERVERS[new_primary_server_index]}'},
+            status = status.HTTP_200_OK
+        )

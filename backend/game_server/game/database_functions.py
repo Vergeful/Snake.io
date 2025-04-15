@@ -12,6 +12,7 @@ def get_all_players():
     from .models import Player
     return list(Player.objects.all().values("id", "name", "x", "y", "size", "speed", "score", "color"))
 
+
 @database_sync_to_async
 def update_player_position(player_id, x, y):
     from .models import Player

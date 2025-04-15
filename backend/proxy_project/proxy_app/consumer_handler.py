@@ -40,7 +40,18 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.trigger_leader_election() 
 
     async def disconnect(self, close_code):
-        pass
+        player_id = self.scope["url_route"]["kwargs"]["player_id"]
+        message = {
+            "type": "player_disconnected",
+            "id": int(player_id)
+        }
+
+
+        try:
+            await self.primary_connection.send(json.dumps(message))
+            print(f"[Proxy] Sent disconnect notice for player {player_id}")
+        except Exception as e:
+            print(f"[Proxy] Failed to notify game server on disconnect: {e}")
 
     async def receive(self, text_data):
         print(f'Proxy has been received data from a client...: {text_data}')
@@ -79,14 +90,22 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def send_to_primary(self, text_data):
         global LAMPORT_CLOCK
 
-        # Increment clock for incoming data to ensure consistent writes at the primary server:
+        if not self.primary_connection:
+            print("[Proxy] Cannot send: connection to primary is closed or unavailable.")
+            await self.trigger_leader_election()
+            return
+
         LAMPORT_CLOCK += 1
         data = json.loads(text_data)
         data["timestamp"] = LAMPORT_CLOCK
 
         print("Sending to primary:", data)
-        response = await self.primary_connection.send(json.dumps(data))
-        return response
+
+        try:
+            await self.primary_connection.send(json.dumps(data))
+        except websockets.ConnectionClosedError as e:
+            print(f"[Proxy] Send failed: connection closed unexpectedly: {e}")
+            await self.trigger_leader_election()
     
     async def trigger_leader_election(self):
         print("Leader election started...")

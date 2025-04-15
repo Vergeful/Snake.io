@@ -108,6 +108,10 @@ export class Game extends Scene {
 
     this.socket = new WebSocket(`ws://localhost:8000/ws/game/${this.playerID}/`);
 
+    window.addEventListener("beforeunload", () => {
+      this.socket.close();
+    });
+
     this.socket.onopen = () => {
       console.log("Connected to WebSocket server");
     };
@@ -254,18 +258,21 @@ export class Game extends Scene {
 
     if (data.type === "all_players"){
       // player seen by the server
-      this.player = new Blob(this, data.players[this.playerID].x,data.players[this.playerID].y, data.players[this.playerID].size, parseInt("#CC8899"), data.players[this.playerID].name);
-      this.player.setAlpha(0.5);
+      if (!this.player){
+        this.player = new Blob(this, data.players[this.playerID].x,data.players[this.playerID].y, data.players[this.playerID].size, parseInt("#CC8899"), data.players[this.playerID].name);
+        this.player.setAlpha(0.5);
 
-      // player seen by the client
-      this.clientBlob = new Blob(this, data.players[this.playerID].x,data.players[this.playerID].y, data.players[this.playerID].size, parseInt(data.players[this.playerID].color), data.players[this.playerID].name);
-      this.cameras.main.startFollow(this.clientBlob, true, 0.1, 0.1);
-      this.cameras.main.setZoom(1);
+        // player seen by the client
+        this.clientBlob = new Blob(this, data.players[this.playerID].x,data.players[this.playerID].y, data.players[this.playerID].size, parseInt(data.players[this.playerID].color), data.players[this.playerID].name);
+        this.cameras.main.startFollow(this.clientBlob, true, 0.1, 0.1);
+        this.cameras.main.setZoom(1);
 
-      this.score = data.players[this.playerID].score;
+        this.score = data.players[this.playerID].score;
+      }
+      
 
       for (const id in data.players) {
-        if (String(id) !== String(this.playerID)) {
+        if (String(id) !== String(this.playerID) && !this.otherPlayers[id]) {
             const { x, y, size, color, name } = data.players[id];
             this.otherPlayers[id] = new Blob(this, x, y, size, color, name);
         }
@@ -281,12 +288,13 @@ export class Game extends Scene {
     }
 
     if (data.type === "player_joined"){
-      if (String(data.id) !== String(this.playerID)) {
+      if ((String(data.id) !== String(this.playerID)) && !this.otherPlayers[data.id]) {
         this.otherPlayers[data.id] = new Blob(this, data.x, data.y, data.size, data.color, data.name);
       }
     }
 
     if (data.type === "player_left"){
+      console.log("Received Data:", data);
       if (String(data.id) !== String(this.playerID)) {
         this.otherPlayers[data.id].destroy();
         delete this.otherPlayers[data.id];
@@ -361,6 +369,7 @@ export class Game extends Scene {
       else{
         this.player.destroy();
         this.clientBlob.destroy();
+        this.socket.close();
       }
 
       if (String(data.id_eater) === String(this.playerID)) {

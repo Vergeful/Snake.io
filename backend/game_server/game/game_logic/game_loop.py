@@ -4,9 +4,11 @@ from ..consumers import GLOBAL_PLAYERS
 import json
 from .game_config import WORLD_BOUNDS
 from .game_physics import process_game_tick
+from game.database_functions import *
 
 TICK_RATE = 60
 TICK_DURATION = 1 / TICK_RATE
+STALE_TIMEOUT = 3
 
 
 async def global_game_loop():
@@ -32,6 +34,12 @@ async def global_game_loop():
             await process_game_tick()
 
             
+            #---------------------
+            if tick_counter % TICK_RATE == 0:
+                for player in list(GLOBAL_PLAYERS):
+                    await update_player_position(player, GLOBAL_PLAYERS[player]["x"], GLOBAL_PLAYERS[player]["y"])
+
+
             #---------------------
 
             # Calculate next tick time

@@ -5,6 +5,8 @@ from .models import Player
 import random
 from .game_logic.game_util import generate_food
 from .game_logic.game_config import FOOD_LIST, GLOBAL_PLAYERS, WORLD_BOUNDS
+from .database_functions import *
+import time 
 
 
 """Functions for accesssing backend database through websockets"""
@@ -53,21 +55,35 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             generate_food()
 
         # Get player id from url:
-        self.player_id = self.scope["url_route"]["kwargs"]["player_id"]
+        self.player_id = int(self.scope["url_route"]["kwargs"]["player_id"])
         player = await get_player(self.player_id)
 
         # Initializing the player configuration
-        GLOBAL_PLAYERS[self.player_id] = {
-            "x": random.randint(WORLD_BOUNDS["x_min"], WORLD_BOUNDS["x_max"]),  
-            "y": random.randint(WORLD_BOUNDS["y_min"], WORLD_BOUNDS["y_max"]),
-            "size": 40,
-            "speed": 150,
-            "score": player.score,
-            "color": player.color,
-            "player_inputs": [],
-            "last_input_processed": 0,
-            "name": player.name
-        }
+        # GLOBAL_PLAYERS[self.player_id] = {
+        #     "x": player.x,  
+        #     "y": player.y,
+        #     "size": player.size,
+        #     "speed": player.speed,
+        #     "score": player.score,
+        #     "color": player.color,
+        #     "player_inputs": [],
+        #     "last_input_processed": 0,
+        #     "name": player.name
+        # }
+
+        for player in await get_all_players():
+            GLOBAL_PLAYERS[player["id"]] = {
+                "x": player["x"],  
+                "y": player["y"],
+                "size": player["size"],
+                "speed": player["speed"],
+                "score": player["score"],
+                "color": player["color"],
+                "player_inputs": [],
+                "last_input_processed": 0,
+                "name": player["name"]
+            }
+
 
         # Sends connecting websocket the pre-existing players
         await self.send(json.dumps({
@@ -91,12 +107,20 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         """
-        Handles disconnected websocket
+        Handles disconnected websocket (e.g., tab closed)
         """
+        print(f"Disconnected player {self.player_id} with code {close_code}")
+
+        await self.channel_layer.group_discard(self.room_name, self.channel_name)
+
         if self.player_id in GLOBAL_PLAYERS:
             del GLOBAL_PLAYERS[self.player_id]
-        
-            await broadcast({"type": "player_left", "id": self.player_id})
+            await delete_player(self.player_id)
+
+            await broadcast({
+                "type": "player_left",
+                "id": self.player_id
+            })
 
 
     async def receive(self, text_data):
@@ -112,17 +136,27 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             return
         
         if data["type"] == "move":
-            if str(data["id"]) in GLOBAL_PLAYERS:
-                GLOBAL_PLAYERS[str(data["id"])]["player_inputs"].append({
+            if data["id"] in GLOBAL_PLAYERS:
+                GLOBAL_PLAYERS[data["id"]]["player_inputs"].append({
                     "input_number": data["input_number"],
                     "direction": data["direction"],
                 })
 
         if data["type"] == "ping":
+            GLOBAL_PLAYERS[self.player_id]["last_ping"] = time.time()
             await self.send(text_data=json.dumps({
                 "type": "pong",
                 "time": data["time"]
             }))
+
+        if data["type"] == "player_disconnected":
+            del GLOBAL_PLAYERS[self.player_id]
+            await delete_player(self.player_id)
+
+            await broadcast({
+                "type": "player_left",
+                "id": self.player_id
+            })
     
 
     

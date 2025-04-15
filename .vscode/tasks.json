@@ -8,7 +8,22 @@
             "command": "cmd",
             "args": [
               "/c",
-              "..\\myenv\\Scripts\\activate && python manage.py runserver 8001"
+              "..\\myenv\\Scripts\\activate && python manage.py runserver 0.0.0.0:8001"
+            ],
+            "problemMatcher": [],
+            "group": { "kind": "build", "isDefault": true },
+            "presentation": { "panel": "shared", "group": "term1" },
+            "options": {
+                "cwd": "${workspaceFolder}/backend/game_server" 
+              }
+          },
+          {
+            "label": "Run Backend Server 2",
+            "type": "shell",
+            "command": "cmd",
+            "args": [
+              "/c",
+              "..\\myenv\\Scripts\\activate && python manage.py runserver 0.0.0.0:8002"
             ],
             "problemMatcher": [],
             "group": { "kind": "build", "isDefault": true },
@@ -23,7 +38,7 @@
             "command": "cmd",
             "args": [
               "/c",
-              "..\\myenv\\Scripts\\activate && python manage.py runserver 8000"
+              "..\\myenv\\Scripts\\activate && python manage.py runserver 0.0.0.0:8000"
             ],
             "problemMatcher": [],
             "group": { "kind": "build", "isDefault": true },
@@ -56,7 +71,7 @@
           },
           {
             "label": "Start All Services",
-            "dependsOn": ["Run Backend Server", "Run Proxy Server" ,"Run Frontend 1", "Run Frontend 2"],
+            "dependsOn": ["Run Backend Server", "Run Backend Server 2", "Run Proxy Server" ,"Run Frontend 1", "Run Frontend 2"],
             "type": "shell",
             "command": "echo 'All services started!'",
             "group": { "kind": "build", "isDefault": true }

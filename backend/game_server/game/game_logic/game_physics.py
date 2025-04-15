@@ -2,6 +2,7 @@ from game.game_logic.game_config import GLOBAL_PLAYERS, FOOD_LIST
 from game.consumers import broadcast
 from game.game_logic.game_config import WORLD_BOUNDS
 from game.game_logic.game_util import spawn_food
+from game.database_functions import *
 
 TICK_RATE = 60
 
@@ -72,6 +73,7 @@ async def process_game_tick():
                     "size": a["size"]
                 })
                 del GLOBAL_PLAYERS[id_b]
+                await delete_player(id_b)
                 break
             elif b["size"] > a["size"] and check_collision(b["x"], b["y"], b["size"], a["x"], a["y"], a["size"]):
                 b["score"] += a["score"]
@@ -83,6 +85,7 @@ async def process_game_tick():
                     "size": b["size"]
                 })
                 del GLOBAL_PLAYERS[id_a]
+                await delete_player(id_a)
                 break
 
     # Broadcast updated positions
@@ -94,3 +97,4 @@ async def process_game_tick():
             "y": GLOBAL_PLAYERS[player]["y"],
             "last_input_processed": GLOBAL_PLAYERS[player]["last_input_processed"]
         })
+    
