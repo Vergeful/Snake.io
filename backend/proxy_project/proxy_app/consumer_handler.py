@@ -14,6 +14,7 @@ LAMPORT_CLOCK = 0
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        print("Proxy has been connected to by a client...")
         await self.accept()
         self.primary_server = None
         self.primary_connection = None
@@ -42,12 +43,11 @@ class GameConsumer(AsyncWebsocketConsumer):
         pass
 
     async def receive(self, text_data):
+        print(f'Proxy has been received data from a client...: {text_data}')
         # Try to send data from client to primary replica:
         try:       
-            response = await self.send_to_primary(text_data)
-            
-            # Send the response back to the client:
-            await self.send(text_data= json.dumps(response))  
+            await self.send_to_primary(text_data)
+            # The listener already handles server-to-client messages.
         
         except Exception as e:
             print(f"Primary server error: {e}")
@@ -55,9 +55,12 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.trigger_leader_election()
 
             # Send intial data from client to newly elected leader:
-            response = await self.primary_connection.send(text_data)
-            await self.send(response) 
-    
+            await self.primary_connection.send(text_data)
+
+    # Check if the client is sending bytes_data:    
+    async def receive_bytes(self, bytes_data):
+        print("Received bytes from client")
+
     async def listen_to_server(self): 
         try:
             async for message in self.primary_connection:
@@ -81,6 +84,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         data["timestamp"] = LAMPORT_CLOCK
 
+        print("Sending to primary:", data)
         response = await self.primary_connection.send(json.dumps(data))
         return response
     

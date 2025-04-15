@@ -18,8 +18,8 @@ def create_player(request):
 
 
     # Inject random spawn coordinates within world bounds
-    data["x"] = random.randint(100, 900)
-    data["y"] = random.randint(100, 900)
+    data.setdefault("x", random.randint(100, 900))
+    data.setdefault("y", random.randint(100, 900))
 
     serializer = PlayerSerializer(data=data)
     if serializer.is_valid():

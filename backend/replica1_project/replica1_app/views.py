@@ -17,8 +17,8 @@ def create_player(request):
     print('What we get: ', data)
 
     # Inject random spawn coordinates within world bounds
-    data["x"] = random.randint(100, 900)
-    data["y"] = random.randint(100, 900)
+    data.setdefault("x", random.randint(100, 900))
+    data.setdefault("y", random.randint(100, 900))
 
     serializer = PlayerSerializer(data=data)
     if serializer.is_valid():
@@ -28,6 +28,7 @@ def create_player(request):
 
         # If this server is the primary replica, propagate the request to other replicas:
         if is_primary():
+           data["id"] = player.id   # Add ID when primary propagates so that replicas have same ids for same players
            propagate_to_replicas(data)
 
         return Response(

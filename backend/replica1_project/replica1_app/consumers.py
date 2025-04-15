@@ -91,21 +91,22 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
 
     async def receive(self, text_data):     
+        global EVENT_QUEUE
         global LAMPORT_CLOCK
         # If the player does not exist return:
         try:
            await get_player(self.player_id)
         except:
             return
-        
+ 
         event = json.loads(text_data)
         timestamp = event.get("timestamp")
+        print(timestamp)
         # Ignore events without a timestamp (ping):
         if timestamp is None:
             return  
-        
-        # Update local lamport clock:
 
+        # Update local lamport clock
         # If event's timestamp is newer, add it to the queue:
         if timestamp > LAMPORT_CLOCK:
             LAMPORT_CLOCK = timestamp 
@@ -125,6 +126,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             new_y = max(WORLD_BOUNDS["y_min"], min(WORLD_BOUNDS["y_max"], intended_y))
 
             await update_player_position(pid, new_x, new_y)
+        else:
+            print("Error: Event does not have data[type] of move")
 
 
     # Game tick loop:
@@ -136,14 +139,13 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                 await asyncio.sleep(1/ TICK_RATE)
 
                 # Process events in the order of timestamps:
-                event = None
                 if len(EVENT_QUEUE) > 0:
                     event = EVENT_QUEUE.dequeue()
                     await self.process_event(event)                        
-
-                # Send event to backup replicas:
-                if event:
+                    # Send event to backup replicas:
                     await propagate_event_to_replicas(event)
+                else:
+                    pass
 
                 curr_player = await get_player_position(self.player_id)
 
