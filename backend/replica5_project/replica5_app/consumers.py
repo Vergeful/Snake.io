@@ -3,10 +3,11 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 import random
 import asyncio
 from collections import deque
-from heapq import heappush, heappop
-from .shared_state import SERVERS, THIS_SERVER, get_primary, update_primary_server
+from .shared_state import SERVERS, THIS_SERVER
 from .database_functions import get_player,get_all_players, update_player_position, get_player_position, delete_player
 from .propagate_functions import propagate_food_list_to_replicas, propagate_event_to_replicas
+from .replica_connection_manager import REPLICA_MANAGER
+from .custom_queue import Queue
 
 # Constants for world and server configuration:
 TICK_RATE = 60
@@ -19,9 +20,9 @@ WORLD_BOUNDS = {
 FOOD_COUNT = 20
 FOOD_LIST = [] 
 
-# Lamport clock and priority queue:
+# Lamport clock and FIFO queue:
 LAMPORT_CLOCK = 0
-EVENT_QUEUE = deque()
+EVENT_QUEUE = Queue()
 
 # Creates random food positions in the world:
 def generate_food():
@@ -36,6 +37,7 @@ def generate_food():
 class PlayerConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         global FOOD_LIST
+        await REPLICA_MANAGER.initialize_connections()   # Establish replica connections on 1st connection 
 
         # Adding players to group:
         self.room_name= "game_room"
@@ -90,16 +92,15 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):     
         global LAMPORT_CLOCK
-        # If the player does not exist:
+        # If the player does not exist return:
         try:
-            player = await get_player(self.player_id)
-        except player.DoesNotExist:
-            await self.send(json.dumps({"error": "Player not found"}))
+           await get_player(self.player_id)
+        except:
             return
         
-        data = json.loads(text_data)
-        timestamp = data.get("timestamp")
-        # Ignore events without a timestamp:
+        event = json.loads(text_data)
+        timestamp = event.get("timestamp")
+        # Ignore events without a timestamp (ping):
         if timestamp is None:
             return  
         
@@ -107,8 +108,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         # If event's timestamp is newer, add it to the queue:
         if timestamp > LAMPORT_CLOCK:
-            LAMPORT_CLOCK = max(LAMPORT_CLOCK, timestamp) + 1
-            heappush(EVENT_QUEUE, (timestamp, data))
+            LAMPORT_CLOCK = timestamp 
+            EVENT_QUEUE.enqueue(event)
         else:
             print(f"Discarded event with out-of-order timestamp: {timestamp}")
 
@@ -136,8 +137,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
                 # Process events in the order of timestamps:
                 event = None
-                if EVENT_QUEUE:
-                    _, event = heappop(EVENT_QUEUE)
+                if len(EVENT_QUEUE) > 0:
+                    event = EVENT_QUEUE.dequeue()
                     await self.process_event(event)                        
 
                 # Send event to backup replicas:
@@ -187,14 +188,14 @@ class ReplicaConsumer(AsyncWebsocketConsumer):
             event = json.loads(text_data)
             
             # Check if the event's timestamp is newer than our Lamport clock
-            timestamp = event.get('timestamp', None)
+            timestamp = event["timestamp"]
             if timestamp is None:
                 print("Event has no timestamp so we discard it.")
                 return
            
            # If the event's timestamp is greater or equal to our Lamport clock, process it
             if timestamp > LAMPORT_CLOCK:
-                LAMPORT_CLOCK = max(LAMPORT_CLOCK, timestamp) + 1   # update lamport clock if necessary
+                LAMPORT_CLOCK = timestamp 
                 await self.process_event(event)                     # process the event
             else:
                 print(f"Event with timestamp {timestamp} is outdated so we discard it.")
@@ -222,4 +223,3 @@ def update_food_list_from_propagation(food_list):
     global FOOD_LIST
     FOOD_LIST = food_list
     print(f'Food list was updated at this replica: {THIS_SERVER}')
-    

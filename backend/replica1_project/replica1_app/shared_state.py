@@ -21,3 +21,5 @@ def update_primary_server(new_server):
 
         if PRIMARY_SERVER != new_server:
             PRIMARY_SERVER = new_server
+
+

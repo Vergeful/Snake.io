@@ -47,7 +47,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             response = await self.send_to_primary(text_data)
             
             # Send the response back to the client:
-            await self.send(response)            
+            await self.send(text_data= json.dumps(response))  
         
         except Exception as e:
             print(f"Primary server error: {e}")
@@ -58,7 +58,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             response = await self.primary_connection.send(text_data)
             await self.send(response) 
     
-    async def listen_to_server(self):
+    async def listen_to_server(self): 
         try:
             async for message in self.primary_connection:
                 # Forward message to frontend

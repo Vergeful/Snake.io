@@ -2,6 +2,7 @@ import websockets
 import json
 import requests
 from .shared_state import SERVERS, THIS_SERVER
+from .replica_connection_manager import REPLICA_MANAGER
 
 # Send created food list to replicas on initial connection:
 async def propagate_food_list_to_replicas(food_list):
@@ -11,7 +12,7 @@ async def propagate_food_list_to_replicas(food_list):
         if server != THIS_SERVER:
             try:
                 # This endpoint has not been created yet:
-                response = requests.post(f"http://{server}/replica/update_food_list/", json={"food_list": food_list})
+                response = requests.post(f"http://{server}/replica/update_food_list/", data={"food_list": food_list})
                 if response.status_code == 200:
                     print(f"Successfully sent food list to {server}")
                 else:
@@ -26,10 +27,4 @@ async def propagate_event_to_replicas(event_data):
     # Send WebSocket messages to all replica servers
     for server in SERVERS:
         if server != THIS_SERVER:
-            try:
-                # This websocket class has not been created fully, see below:
-                async with websockets.connect(f'ws://{server}/ws/propagated_data') as websocket:
-                    await websocket.send(json.dumps(event_data))
-                    print(f"Successfully sent event to {server}")
-            except Exception as e:
-                print(f"Server did not respond: {server}")
+            await REPLICA_MANAGER.send(server, json.dumps(event_data))
