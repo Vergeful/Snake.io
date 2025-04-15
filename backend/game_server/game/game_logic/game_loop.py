@@ -17,7 +17,7 @@ async def global_game_loop():
             if GLOBAL_PLAYERS:
                 break  # Exit loop once a player joins
 
-            print("Still waiting for players...")
+            #print("Still waiting for players...")
             await asyncio.sleep(1 / TICK_RATE)
 
         tick_counter = 0
