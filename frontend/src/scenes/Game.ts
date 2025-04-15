@@ -20,7 +20,7 @@ export class Game extends Scene {
   create(data: any) {
     // Enable physics world with boundaries
 
-    const playerNmae = data?.playerName;
+    const playerName = data?.playerName;
     const playerColor = data?.playerColor;
     this.playerID = data?.playerID;
 

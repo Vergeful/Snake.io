@@ -20,7 +20,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         self.primary_connection = None
         # Get player_id from url to access websocket with primary replica:
         self.player_id = self.scope["url_route"]["kwargs"]["player_id"]
-        await self.connect_to_primary()
+
+        self.election_in_progress = False    # Prevent race conditions
+        await self.connect_to_primary() 
 
     # When the client establishes a websocket connection with the proxy, try to establish connection with primary:
     async def connect_to_primary(self):
@@ -40,7 +42,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.trigger_leader_election() 
 
     async def disconnect(self, close_code):
-        pass
+        if self.primary_connection:
+            await self.primary_connection.close()
+        print("Client disconnected")
 
     async def receive(self, text_data):
         print(f'Proxy has been received data from a client...: {text_data}')
@@ -55,7 +59,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.trigger_leader_election()
 
             # Send intial data from client to newly elected leader:
-            await self.primary_connection.send(text_data)
+            await self.send_to_primary(text_data)
 
     # Check if the client is sending bytes_data:    
     async def receive_bytes(self, bytes_data):
@@ -65,15 +69,14 @@ class GameConsumer(AsyncWebsocketConsumer):
         try:
             async for message in self.primary_connection:
                 # Forward message to frontend
-                try:
-                    await self.send(message)
-                except Exception:
-                    print("Something Went Wrong")
-                    self.trigger_leader_election()
-                    break
+                await self.send(message)
+                
         except websockets.exceptions.ConnectionClosed:
-            # now we have to trigger leader election
-            pass
+            print("WebSocket connection with primary server closed.")
+            await self.trigger_leader_election()
+        except Exception as e:
+            print("Unexpected WebSocket error:", e)
+            await self.trigger_leader_election()
 
     # Send data from client to primary replica over websocket connection
     async def send_to_primary(self, text_data):
